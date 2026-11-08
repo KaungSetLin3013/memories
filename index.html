@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>Memories — Live Event Photo Booth</title>
 <meta name="description" content="A crowdsourced digital disposable camera for weddings, parties, and events. Guests snap photos on their phones and every shot lands in a shared live gallery — no app to install.">
 <meta name="author" content="Kaung Set Lin">
@@ -26,7 +27,7 @@
 <meta name="twitter:title" content="Memories — Live Event Photo Booth">
 <meta name="twitter:description" content="Snap a photo, it lands in the shared gallery instantly. A crowdsourced digital disposable camera for weddings, parties, and events — no app to install.">
 
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#0f0f10">
 <!-- Website icon -->
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -34,412 +35,414 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  :root {
-    --bg: #0a0a0a;
-    --surface: #161616;
-    --surface2: #1f1f1f;
-    --border: rgba(255,255,255,0.1);
-    --text: #f0f0f0;
-    --text-muted: #888;
-    --accent: #c8f057;
-    --accent-dark: #9bbb2e;
-    --danger: #ff4f4f;
-    --radius: 14px;
-    --safe-bottom: env(safe-area-inset-bottom, 16px);
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    color-scheme:dark;
+    /* Surfaces: lifted off pure black, lighter = higher */
+    --bg:#0f0f10;
+    --surface:#18181a;
+    --surface2:#222225;
+    --border:rgb(255 255 255 / .1);
+    --border-strong:rgb(255 255 255 / .4);      /* >=3:1 edge for inputs and outline buttons */
+    --text:rgb(255 255 255 / .87);
+    --text-muted:rgb(255 255 255 / .62);        /* >=4.5:1 on every surface */
+    --accent:#c8f057;
+    --accent-dark:#9bbb2e;
+    --on-accent:#141414;
+    --danger:#ff5c5c;
+    --radius:14px;
+    /* Three spacing sizes, reused everywhere */
+    --gap-s:8px;
+    --gap-m:16px;
+    --gap-l:24px;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
   }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-    height: 100dvh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font:400 16px/1.4 -apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,system-ui,sans-serif;
+    height:100dvh;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    position:relative;
   }
+  button,input{font:inherit;color:inherit}
+  button{cursor:pointer}
+  button:disabled{cursor:default;opacity:.6}
+  :where(button,a,input):focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  svg.icon,.icon-svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 
   /* SCREENS */
-  .screen { display: none; flex-direction: column; height: 100%; }
-  .screen.active { display: flex; }
+  .screen{display:none;flex-direction:column;height:100%}
+  .screen.active{display:flex}
 
   /* HEADER */
-  .header {
-    padding: 52px 20px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
+  .header{
+    padding:calc(var(--gap-m) + var(--safe-top)) var(--gap-m) var(--gap-m);
+    display:flex;align-items:center;justify-content:space-between;gap:var(--gap-m);
+    flex-shrink:0;
   }
-  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-  .header .accent { color: var(--accent); }
-  .header-btn {
-    width: 38px; height: 38px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    color: var(--text);
-    font-size: 16px;
+  .header-gallery{align-items:flex-start;padding-bottom:var(--gap-s)}
+  .header-tight{padding-bottom:var(--gap-s)}
+  .header-main{min-width:0}
+  .header h1{font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.15}
+  .header .accent{color:var(--accent)}
+  .header-sub{font-size:14px;color:var(--text-muted);min-height:20px;margin-top:2px}
+  .header-actions{display:flex;gap:var(--gap-s)}
+  .back-link{
+    display:inline-flex;align-items:center;gap:4px;min-height:48px;
+    color:var(--accent);font-size:15px;font-weight:600;text-decoration:none;
+    margin-left:-4px;padding-right:var(--gap-s);
   }
+  .back-link:hover{text-decoration:underline}
+  .header-btn{
+    width:48px;height:48px;
+    background:var(--surface2);
+    border:1px solid var(--border-strong);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform 400ms cubic-bezier(.34,1.56,.64,1),background-color 100ms;
+  }
+  .header-btn:active{transform:scale(.92);transition-duration:80ms}
+  @media (hover:hover){.header-btn:hover{background:#2d2d31}}
 
   /* BOTTOM NAV */
-  .bottom-nav {
-    display: flex;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    padding: 12px 0 calc(12px + var(--safe-bottom));
-    flex-shrink: 0;
+  .bottom-nav{
+    display:flex;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    padding:var(--gap-s) 0 calc(var(--gap-s) + var(--safe-bottom));
+    flex-shrink:0;
   }
-  .nav-btn {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; gap: 4px;
-    cursor: pointer; border: none; background: none;
-    color: var(--text-muted); font-size: 10px; font-weight: 500;
-    padding: 4px 0; transition: color 0.15s;
+  .nav-btn{
+    flex:1;min-height:56px;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    border:none;background:none;border-radius:12px;
+    color:var(--text-muted);font-size:13px;font-weight:600;
+    transition:color 200ms;
   }
-  .nav-btn .icon { font-size: 22px; }
-  .nav-btn.active { color: var(--accent); }
-  .nav-btn.capture-btn {
-    flex: 0 0 72px;
+  /* Press: the icon sinks fast, then springs back with a little overshoot */
+  .nav-btn svg{transition:transform 400ms cubic-bezier(.34,1.56,.64,1)}
+  .nav-btn:active svg{transform:scale(.86);transition-duration:80ms}
+  .nav-btn.active{color:var(--accent)}
+  /* Active tab: the bar grows out from the centre and the icon pops (transform + opacity only) */
+  .nav-btn.active::before{
+    content:'';position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+    width:32px;height:3px;border-radius:2px;background:var(--accent);
+    animation:nav-bar-in 280ms cubic-bezier(.2,.8,.2,1);
   }
-  .capture-ring {
-    width: 54px; height: 54px;
-    border-radius: 50%;
-    border: 3px solid var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    background: transparent;
+  .nav-btn.active svg{animation:nav-icon-pop 380ms cubic-bezier(.34,1.56,.64,1)}
+  @keyframes nav-bar-in{
+    from{transform:translateX(-50%) scaleX(0);opacity:0}
+    to{transform:translateX(-50%) scaleX(1);opacity:1}
   }
-  .capture-inner {
-    width: 42px; height: 42px;
-    background: var(--accent);
-    border-radius: 50%;
+  @keyframes nav-icon-pop{
+    0%{transform:translateY(4px) scale(.8)}
+    60%{transform:translateY(-2px) scale(1.12)}
+    100%{transform:none}
   }
 
   /* GALLERY SCREEN */
-  #screen-gallery { overflow: hidden; }
-  .pull-hint {
-    text-align: center; font-size: 11px; color: var(--text-muted);
-    padding: 6px 0 2px; flex-shrink: 0;
+  #screen-gallery{overflow:hidden}
+  .pull-hint{display:none} /* admin entry is the gear button; the pull gesture still works */
+  .gallery-scroll{
+    flex:1;overflow-y:auto;padding:0 4px var(--gap-s);
+    overscroll-behavior:contain;
+    display:flex;flex-direction:column;
   }
-  .pull-hint span { display: inline-block; }
-  .gallery-scroll {
-    flex: 1; overflow-y: auto; padding: 4px 4px 0;
-    overscroll-behavior: contain;
+  .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;flex-shrink:0}
+  .gallery-item{
+    aspect-ratio:1;display:block;width:100%;
+    background:var(--surface2);
+    border:none;border-radius:8px;padding:0;
+    overflow:hidden;position:relative;
   }
-  .gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
+  .gallery-item img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    opacity:0;transition:opacity 300ms;
   }
-  .gallery-item {
-    aspect-ratio: 1;
-    background: var(--surface2);
-    border-radius: 6px;
-    overflow: hidden;
-    cursor: pointer;
-    position: relative;
+  .gallery-item img.in{opacity:1}
+  .gallery-item{transition:transform 400ms cubic-bezier(.34,1.56,.64,1)}
+  .gallery-item:active{transform:scale(.96);transition-duration:80ms}
+  .gallery-item:focus-visible{outline-offset:-3px}
+  /* Skeleton: show the shape before the content */
+  .skel{
+    background:linear-gradient(90deg,#1c1c1f 25%,#2a2a2e 50%,#1c1c1f 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.2s linear infinite;
   }
-  .gallery-item img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: block;
+  @keyframes shimmer{to{background-position:-200% 0}}
+  .gallery-empty{
+    flex:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:var(--gap-m);
+    padding:var(--gap-l);text-align:center;color:var(--text-muted);
   }
-  .gallery-empty {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 12px;
-    color: var(--text-muted);
-  }
-  .gallery-empty .big-icon { font-size: 48px; opacity: 0.3; }
+  .gallery-empty .big-icon{width:48px;height:48px;opacity:.5}
+  .gallery-empty h2{font-size:20px;font-weight:600;color:var(--text)}
+  .gallery-empty p{font-size:15px;max-width:28ch}
 
   /* CAMERA SCREEN */
-  #screen-camera {
-    background: #000;
-    position: relative;
-    overflow: hidden;
+  #screen-camera{background:#000;position:relative;overflow:hidden}
+  #camera-view{touch-action:none}
+  .cam-topbar{
+    position:absolute;top:0;left:0;right:0;z-index:5;
+    padding:calc(var(--gap-m) + var(--safe-top)) var(--gap-m) var(--gap-m);
+    display:flex;justify-content:space-between;align-items:center;
+    background:linear-gradient(to bottom,rgb(0 0 0 / .65) 0%,transparent 100%);
   }
-  #camera-video {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    position: absolute; inset: 0;
+  .cam-bottombar{
+    position:absolute;bottom:0;left:0;right:0;z-index:5;
+    padding:var(--gap-l) 0 var(--gap-m);
+    background:linear-gradient(to top,rgb(0 0 0 / .75) 0%,transparent 100%);
   }
-  .camera-overlay {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    justify-content: flex-end;
-    padding-bottom: calc(24px + var(--safe-bottom));
-    background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.7) 100%);
+  .cam-bottombar-row{display:flex;align-items:center;justify-content:space-between;padding:0 32px}
+  .cam-btn{
+    width:48px;height:48px;min-width:48px;
+    background:rgb(0 0 0 / .45);
+    border:1px solid rgb(255 255 255 / .35);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:14px;font-weight:700;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    transition:transform 400ms cubic-bezier(.34,1.56,.64,1),background-color 100ms;
   }
-  .camera-controls {
-    display: flex; align-items: center; justify-content: space-around;
-    padding: 0 32px;
+  .cam-btn:active{transform:scale(.92);transition-duration:80ms}
+  #ratio-btn{color:var(--accent);border-color:var(--accent);font-size:13px}
+  .shutter-btn{
+    width:72px;height:72px;border-radius:50%;
+    border:4px solid #fff;background:transparent;
+    display:flex;align-items:center;justify-content:center;
   }
-  .cam-btn {
-    width: 48px; height: 48px;
-    background: rgba(255,255,255,0.18);
-    border: none; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 20px; cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+  .shutter-btn{transition:transform 400ms cubic-bezier(.34,1.56,.64,1)}
+  .shutter-btn:active{transform:scale(.95);transition-duration:80ms}
+  .shutter-inner{width:56px;height:56px;background:#fff;border-radius:50%;transition:transform 400ms cubic-bezier(.34,1.56,.64,1)}
+  .shutter-btn:active .shutter-inner{transform:scale(.86);transition-duration:80ms}
+  .zoom-wrap{
+    position:absolute;bottom:170px;left:0;right:0;z-index:5;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
   }
-  .shutter-btn {
-    width: 72px; height: 72px;
-    border-radius: 50%;
-    border: 4px solid #fff;
-    background: transparent;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+  .zoom-pills{
+    display:flex;gap:4px;padding:4px;border-radius:100px;
+    background:rgb(0 0 0 / .5);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   }
-  .shutter-inner {
-    width: 56px; height: 56px;
-    background: #fff;
-    border-radius: 50%;
-    transition: transform 0.1s;
+  .zoom-pill{
+    min-width:48px;min-height:48px;padding:0 12px;
+    background:transparent;border:none;border-radius:100px;
+    color:rgb(255 255 255 / .85);font-size:14px;font-weight:600;white-space:nowrap;
+    transition:transform 400ms cubic-bezier(.34,1.56,.64,1),background-color 100ms,color 100ms;
   }
-  .shutter-btn:active .shutter-inner { transform: scale(0.88); }
-  .flash {
-    position: absolute; inset: 0;
-    background: #fff;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.08s;
-    z-index: 10;
+  .zoom-pill:active{transform:scale(.93);transition-duration:80ms}
+  .zoom-pill.active{background:rgb(255 255 255 / .28);color:var(--accent)}
+  .camera-error{
+    display:none;position:absolute;inset:0;z-index:4;
+    background:rgb(0 0 0 / .88);
+    flex-direction:column;align-items:center;justify-content:center;
+    gap:var(--gap-m);padding:var(--gap-l);text-align:center;
   }
-  .flash.go { opacity: 1; }
-  .camera-caption-area {
-    padding: 12px 20px 0;
-    display: flex; gap: 8px;
-  }
-  .caption-input {
-    flex: 1; background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 22px;
-    padding: 8px 16px;
-    color: #fff; font-size: 14px;
-    outline: none; backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  .caption-input::placeholder { color: rgba(255,255,255,0.5); }
+  .camera-error.show{display:flex}
+  .camera-error h2{font-size:20px;font-weight:600}
+  .camera-error p{color:var(--text-muted);font-size:15px;max-width:30ch}
+  .camera-error-actions{display:flex;flex-direction:column;gap:var(--gap-s);width:100%;max-width:280px}
 
-  /* UPLOADER NAME MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; z-index: 100;
-    background: rgba(0,0,0,0.7);
-    align-items: center; justify-content: center;
-    padding: 20px;
+  /* BUTTONS: 48px tall, 17px semibold, verb + object, pill radius */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    min-height:48px;padding:0 var(--gap-l);border-radius:24px;
+    font-size:17px;font-weight:600;line-height:1.1;text-align:center;
+    border:1px solid transparent;
+    transition:transform 400ms cubic-bezier(.34,1.56,.64,1),box-shadow 100ms,background-color 100ms,opacity 100ms;
   }
-  .modal-overlay.open { display: flex; }
-  .modal-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 28px 24px;
-    width: 100%; max-width: 340px;
+  .btn:active:not(:disabled){transform:scale(.95);transition-duration:80ms}
+  /* Loading: a spinner slides in before the label, 10px apart like any other icon */
+  .btn.is-loading::before{
+    content:'';width:18px;height:18px;border-radius:50%;flex-shrink:0;
+    border:2px solid currentColor;border-top-color:transparent;
+    animation:spin 700ms linear infinite;
   }
-  .modal-card h2 { font-size: 18px; margin-bottom: 6px; }
-  .modal-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
-  .modal-input {
-    width: 100%; background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 14px;
-    color: var(--text); font-size: 16px; outline: none;
-    margin-bottom: 14px;
+  .btn-primary,.btn-save{
+    background:var(--accent);color:var(--on-accent);border-color:var(--accent-dark);
+    box-shadow:inset 0 1px 0 rgb(255 255 255 / .35),0 1px 2px rgb(0 0 0 / .25);
   }
-  .modal-input:focus { border-color: var(--accent); }
-  .btn-primary {
-    width: 100%; background: var(--accent);
-    color: #1a1a1a; font-weight: 700; font-size: 15px;
-    border: none; border-radius: 12px;
-    padding: 13px; cursor: pointer;
-  }
-  .btn-secondary {
-    width: 100%; background: transparent;
-    color: var(--text-muted); font-size: 14px;
-    border: 1px solid var(--border); border-radius: 12px;
-    padding: 11px; cursor: pointer; margin-top: 8px;
-  }
+  .btn-primary:active:not(:disabled),.btn-save:active:not(:disabled){box-shadow:inset 0 2px 3px rgb(0 0 0 / .3)}
+  @media (hover:hover){.btn-primary:hover:not(:disabled),.btn-save:hover:not(:disabled){background:#d4f56f}}
+  .btn-secondary,.btn-outline{background:transparent;color:var(--text);border-color:var(--border-strong)}
+  @media (hover:hover){.btn-secondary:hover:not(:disabled),.btn-outline:hover:not(:disabled){background:rgb(255 255 255 / .08)}}
+  .btn-danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+  @media (hover:hover){.btn-danger:hover:not(:disabled){background:rgb(255 92 92 / .12)}}
+  .btn-block{width:100%}
 
-  /* ADMIN TABS */  #screen-admin { overflow: hidden; }
-  .admin-tab {
-    flex: 1; background: none; border: none; color: var(--text-muted);
-    font-size: 11px; font-weight: 600; padding: 12px 4px;
-    cursor: pointer; border-bottom: 2px solid transparent;
-    transition: all 0.15s; white-space: nowrap;
+  /* MODALS: dim what's behind the focus */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;z-index:100;
+    background:rgb(0 0 0 / .7);
+    align-items:center;justify-content:center;
+    padding:var(--gap-m);overscroll-behavior:contain;
   }
-  .admin-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .admin-tab-content {
-    display: none; flex-direction: column;
-    flex: 1; overflow: hidden;
+  .modal-overlay.open{display:flex}
+  .modal-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:var(--gap-l);
+    width:100%;max-width:360px;
+    max-height:calc(100dvh - 32px);overflow-y:auto;
   }
-  .admin-tab-content.active { display: flex; }
-  .stat-card {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  .modal-card h2{font-size:20px;font-weight:700;margin-bottom:var(--gap-s)}
+  .modal-card p{color:var(--text-muted);font-size:15px;margin-bottom:var(--gap-l)}
+  .modal-card .btn{width:100%}
+  .modal-card .btn-secondary{margin-top:var(--gap-s)}
+  .field-label{display:block;font-size:14px;font-weight:600;margin-bottom:var(--gap-s)}
+  .field-label .optional{color:var(--text-muted);font-weight:400}
+  .modal-input{
+    width:100%;min-height:48px;background:var(--surface2);
+    border:1px solid var(--border-strong);
+    border-radius:12px;padding:0 var(--gap-m);
+    font-size:16px;outline:none;margin-bottom:var(--gap-m);
   }
-  .stat-num { font-size: 28px; font-weight: 800; color: var(--accent); }
-  .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
-  .filter-tag {
-    background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text-muted); font-size: 12px; font-weight: 600;
-    padding: 5px 12px; border-radius: 100px; cursor: pointer;
-    white-space: nowrap; flex-shrink: 0; transition: all 0.15s;
+  .modal-input::placeholder{color:var(--text-muted)}
+  .modal-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgb(200 240 87 / .25)}
+  .modal-input[aria-invalid="true"]{border-color:var(--danger)}
+  .modal-card .field-error{color:var(--danger);font-size:14px;margin:calc(var(--gap-s) * -1) 0 var(--gap-m)}
+  .preview-card{padding:0;overflow:hidden;max-width:360px}
+  .preview-card img{width:100%;display:block;max-height:55dvh;object-fit:contain;background:#000}
+  .preview-body{padding:var(--gap-m);overflow-y:auto}
+
+  /* ADMIN */
+  #screen-admin{overflow:hidden}
+  .admin-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+  .admin-tab{
+    flex:1;min-height:48px;padding:0 4px;background:none;border:none;
+    border-bottom:3px solid transparent;color:var(--text-muted);
+    font-size:14px;font-weight:600;white-space:nowrap;
+    transition:color 150ms,border-color 150ms;
   }
-  .filter-tag.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
-  .admin-photo-row {
-    display: flex; gap: 10px; align-items: flex-start;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 10px; margin-bottom: 10px;
+  .admin-tab:active{background:rgb(255 255 255 / .06)}
+  .admin-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .admin-tab-content{display:none;flex-direction:column;flex:1;overflow:hidden}
+  .admin-tab-content.active{display:flex}
+  .tab-scroll{flex:1;overflow-y:auto;padding:var(--gap-m);overscroll-behavior:contain}
+  .toolbar{
+    display:flex;gap:var(--gap-s);align-items:center;
+    padding:var(--gap-s) var(--gap-m);border-bottom:1px solid var(--border);flex-shrink:0;
   }
-  .admin-photo-row img {
-    width: 72px; height: 72px; object-fit: cover;
-    border-radius: 8px; flex-shrink: 0;
+  .toolbar .modal-input{margin:0;flex:1;min-width:0}
+  .toolbar .btn{padding:0 var(--gap-m);font-size:16px;white-space:nowrap}
+  .toolbar-chips{overflow-x:auto}
+  .toolbar-label{flex:1;font-size:14px;color:var(--text-muted)}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-s);margin-bottom:var(--gap-m)}
+  .stat-card{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius);padding:var(--gap-m);
+    display:flex;flex-direction:column;align-items:center;gap:4px;
   }
-  .admin-photo-row .info { flex: 1; min-width: 0; }
-  .admin-photo-row .meta { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-  .admin-photo-row .cap-input {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 6px; padding: 6px 8px; color: var(--text);
-    font-size: 12px; outline: none; margin-bottom: 6px;
+  .stat-num{font-size:30px;font-weight:700;color:var(--accent);line-height:1.1}
+  .stat-label{font-size:13px;color:var(--text-muted);font-weight:500}
+  .filter-tag{
+    min-height:48px;padding:0 var(--gap-m);
+    background:var(--surface2);border:1px solid var(--border-strong);border-radius:100px;
+    color:var(--text);font-size:14px;font-weight:600;white-space:nowrap;flex-shrink:0;
+    transition:transform 400ms cubic-bezier(.34,1.56,.64,1),background-color 100ms,color 100ms;
   }
-  .admin-photo-row .cap-input:focus { border-color: var(--accent); }
-  .admin-photo-row .row-actions { display: flex; gap: 6px; }
-  .row-save { background: var(--accent); color: #1a1a1a; border: none; border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
-  .row-del  { background: transparent; color: var(--danger); border: 1px solid var(--danger); border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; }
-  .admin-photo-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 12px;
-    overflow: hidden;
+  .filter-tag:active{transform:scale(.94);transition-duration:80ms}
+  .filter-tag.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+  .admin-photo-row{
+    display:flex;gap:var(--gap-m);align-items:flex-start;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:var(--gap-m);margin-bottom:var(--gap-s);
   }
-  .admin-photo-img {
-    width: 100%; aspect-ratio: 16/9;
-    object-fit: cover; display: block;
+  .admin-photo-row img{width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0}
+  .admin-photo-row .info{flex:1;min-width:0}
+  .admin-photo-row .meta{font-size:13px;color:var(--text-muted);margin-bottom:var(--gap-s);overflow-wrap:anywhere}
+  .admin-photo-row .cap-input{
+    width:100%;min-height:48px;background:var(--surface2);border:1px solid var(--border-strong);
+    border-radius:12px;padding:0 12px;font-size:16px;outline:none;margin-bottom:var(--gap-s);
   }
-  .admin-photo-body { padding: 12px; }
-  .admin-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
-  .admin-caption-input {
-    width: 100%; background: var(--surface2);
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px 10px; color: var(--text); font-size: 14px;
-    outline: none; margin-bottom: 10px;
+  .admin-photo-row .cap-input:focus{border-color:var(--accent)}
+  .row-actions{display:flex;flex-wrap:wrap;gap:var(--gap-s)}
+  .row-actions .btn{padding:0 var(--gap-m);font-size:16px}
+  .admin-section-title{font-size:14px;font-weight:600;color:var(--text-muted);margin:var(--gap-l) 0 var(--gap-s)}
+  .admin-section-title:first-child{margin-top:0}
+  .settings-card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:var(--gap-m);margin-bottom:var(--gap-s);
   }
-  .admin-caption-input:focus { border-color: var(--accent); }
-  .admin-actions { display: flex; gap: 8px; }
-  .btn-save {
-    flex: 1; background: var(--accent);
-    color: #1a1a1a; font-weight: 600; font-size: 13px;
-    border: none; border-radius: 8px; padding: 9px; cursor: pointer;
-  }
-  .btn-delete {
-    background: transparent; color: var(--danger);
-    border: 1px solid var(--danger); border-radius: 8px;
-    padding: 9px 14px; font-size: 13px; cursor: pointer;
-  }
-  .admin-section-title {
-    font-size: 12px; font-weight: 600; color: var(--text-muted);
-    letter-spacing: 0.08em; text-transform: uppercase;
-    margin: 20px 0 12px;
-  }
-  .settings-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-  .settings-card label { font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 6px; }
-  .settings-row { display: flex; gap: 8px; }
-  .settings-row .modal-input { margin-bottom: 0; flex: 1; font-size: 14px; }
+  .settings-card label,.settings-card .card-title{font-size:14px;font-weight:600;display:block;margin-bottom:var(--gap-s)}
+  .settings-card .hint{font-weight:400;color:var(--text-muted)}
+  .settings-card p{font-size:14px;color:var(--text-muted);margin:0 0 var(--gap-m)}
+  .settings-card.danger{border-color:rgb(255 92 92 / .45)}
+  .settings-card.danger .card-title{color:var(--danger)}
+  .settings-row{display:flex;gap:var(--gap-s)}
+  .settings-row .modal-input{margin-bottom:0;flex:1;min-width:0}
+  .settings-row .btn{padding:0 var(--gap-m);font-size:16px;white-space:nowrap}
+  .dev-head{display:flex;justify-content:space-between;align-items:center;gap:var(--gap-m);margin-bottom:var(--gap-s)}
+  .dev-name{font-size:16px;font-weight:600}
+  .dev-meta{font-size:13px;color:var(--text-muted);overflow-wrap:anywhere}
+  .dev-count-wrap{text-align:right;flex-shrink:0}
+  .dev-count{font-size:24px;font-weight:700;color:var(--accent);line-height:1.1}
+  .dev-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:var(--gap-m)}
+  .dev-bar-fill{height:100%;border-radius:3px;transition:width 300ms}
+  .dev-actions{display:flex;flex-wrap:wrap;gap:var(--gap-s)}
+  .dev-actions .btn{flex:1;padding:0 var(--gap-m);font-size:16px}
 
   /* LIGHTBOX */
-  #lightbox {
-    display: none; position: fixed; inset: 0; z-index: 200;
-    background: rgba(0,0,0,0.95);
-    align-items: center; justify-content: center;
-    flex-direction: column;
+  #lightbox{
+    display:none;position:fixed;inset:0;z-index:200;
+    background:rgb(0 0 0 / .95);
+    align-items:center;justify-content:center;flex-direction:column;
+    gap:var(--gap-m);padding:var(--gap-m);
   }
-  #lightbox.open { display: flex; }
-  #lightbox img { max-width: 100%; max-height: 80dvh; object-fit: contain; }
-  #lightbox-caption { color: var(--text-muted); font-size: 13px; margin-top: 12px; }
-  #lightbox-close {
-    position: absolute; top: 52px; right: 20px;
-    width: 38px; height: 38px;
-    background: rgba(255,255,255,0.12);
-    border: none; border-radius: 50%;
-    color: #fff; font-size: 20px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+  #lightbox.open{display:flex}
+  #lightbox img{max-width:100%;max-height:75dvh;object-fit:contain;border-radius:8px}
+  #lightbox-caption{color:var(--text-muted);font-size:15px;text-align:center;max-width:36ch}
+  #lightbox-close,.lb-nav{
+    position:absolute;width:48px;height:48px;
+    background:rgb(255 255 255 / .16);border:1px solid rgb(255 255 255 / .35);border-radius:50%;
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    transition:transform 400ms cubic-bezier(.34,1.56,.64,1),background-color 100ms;
   }
+  #lightbox-close{top:calc(var(--gap-m) + var(--safe-top));right:var(--gap-m)}
+  .lb-nav{top:50%;margin-top:-24px;background:rgb(0 0 0 / .5)}
+  #lightbox-prev{left:var(--gap-s)}
+  #lightbox-next{right:var(--gap-s)}
+  #lightbox-close:active{transform:scale(.92);transition-duration:80ms}
+  .lb-nav:active{transform:scale(.92);transition-duration:80ms}
 
   /* TOAST */
-  #toast {
-    position: fixed; bottom: calc(90px + var(--safe-bottom));
-    left: 50%; transform: translateX(-50%) translateY(20px);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 100px; padding: 10px 20px;
-    font-size: 13px; color: var(--text);
-    opacity: 0; transition: all 0.2s;
-    white-space: nowrap; z-index: 300;
-    pointer-events: none;
+  #toast{
+    position:fixed;bottom:calc(88px + var(--safe-bottom));
+    left:50%;transform:translateX(-50%) translateY(16px);
+    max-width:calc(100% - 32px);text-align:center;
+    background:var(--surface2);border:1px solid var(--border-strong);
+    border-radius:24px;padding:12px var(--gap-m);
+    font-size:15px;color:var(--text);
+    opacity:0;transition:opacity 200ms,transform 200ms;
+    z-index:300;pointer-events:none;
   }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   /* PROGRESS */
-  .upload-progress {
-    position: fixed; top: 0; left: 0; right: 0; height: 3px;
-    background: transparent; z-index: 400;
-  }
-  .upload-progress-bar {
-    height: 100%; background: var(--accent);
-    width: 0%; transition: width 0.3s;
-  }
-
-  /* PULL INDICATOR */
-  .pull-indicator {
-    position: absolute; top: 0; left: 0; right: 0;
-    display: flex; align-items: center; justify-content: center;
-    padding: 16px; background: var(--surface2);
-    transform: translateY(-100%);
-    transition: transform 0.2s;
-    z-index: 10;
-    font-size: 13px; color: var(--text-muted); gap: 8px;
-  }
+  .upload-progress{position:fixed;top:0;left:0;right:0;height:3px;background:transparent;z-index:400}
+  .upload-progress-bar{height:100%;background:var(--accent);width:0%;transition:width 300ms}
 
   /* SPINNER */
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner {
-    width: 18px; height: 18px;
-    border: 2px solid rgba(200,240,87,0.3);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    display: inline-block; flex-shrink: 0;
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner{
+    width:20px;height:20px;
+    border:2px solid rgb(200 240 87 / .3);border-top-color:var(--accent);
+    border-radius:50%;animation:spin .8s linear infinite;
+    display:inline-block;flex-shrink:0;
   }
 
-  .text-danger { color: var(--danger); }
-  .zoom-pill {
-    background: transparent; border: none;
-    color: rgba(255,255,255,0.75); font-size: 12px; font-weight: 600;
-    padding: 5px 11px; border-radius: 100px; cursor: pointer;
-    transition: all 0.15s; white-space: nowrap;
-  }
-  .zoom-pill.active {
-    background: rgba(255,255,255,0.22); color: #fff;
-  }
-  .filter-pill {
-    background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.18);
-    color: rgba(255,255,255,0.8); font-size: 12px; font-weight: 600;
-    padding: 6px 14px; border-radius: 100px; cursor: pointer;
-    white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  }
-  .filter-pill.active {
-    background: var(--accent); color: #1a1a1a; border-color: var(--accent);
+  /* Motion off when asked; keep the spinner turning slowly so loading is still visible */
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    .spinner{animation-duration:1.6s!important;animation-iteration-count:infinite!important}
+    .skel{animation:none!important}
+    .btn.is-loading::before{animation-duration:1.6s!important;animation-iteration-count:infinite!important}
   }
 </style>
 </head>
@@ -449,75 +452,105 @@
 <script src="setup.js"></script>
 
 <!-- PROGRESS BAR -->
-<div class="upload-progress"><div class="upload-progress-bar" id="progress-bar"></div></div>
+<div class="upload-progress" aria-hidden="true"><div class="upload-progress-bar" id="progress-bar"></div></div>
 
 <!-- TOAST -->
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <!-- LIGHTBOX -->
-<div id="lightbox">
-  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightbox-img" src="" alt="">
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <button id="lightbox-close" aria-label="Close photo">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <button class="lb-nav" id="lightbox-prev" aria-label="Previous photo">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+  </button>
+  <img id="lightbox-img" alt="">
+  <button class="lb-nav" id="lightbox-next" aria-label="Next photo">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+  </button>
   <p id="lightbox-caption"></p>
 </div>
 
 <!-- PREVIEW MODAL -->
-<div class="modal-overlay" id="preview-modal">
-  <div class="modal-card" style="padding:0;overflow:hidden;max-width:360px;width:100%">
-    <img id="preview-img" src="" alt="" style="width:100%;display:block;max-height:60dvh;object-fit:contain;background:#000">
-    <div style="padding:18px 18px 14px">
-      <input class="modal-input" id="preview-caption" type="text" placeholder="Add a caption… (optional)" maxlength="120" style="margin-bottom:12px">
-      <button class="btn-primary" id="preview-upload-btn">Upload</button>
-      <button class="btn-secondary" id="preview-retake-btn">Retake</button>
+<div class="modal-overlay" id="preview-modal" role="dialog" aria-modal="true" aria-label="Review your photo" data-focus="#preview-upload-btn">
+  <div class="modal-card preview-card">
+    <img id="preview-img" alt="Preview of the photo you just took">
+    <div class="preview-body">
+      <label class="field-label" for="preview-caption">Caption <span class="optional">(optional)</span></label>
+      <input class="modal-input" id="preview-caption" type="text" placeholder="Say something about this moment" maxlength="120" enterkeyhint="done">
+      <button class="btn btn-primary" id="preview-upload-btn">Upload photo</button>
+      <button class="btn btn-secondary" id="preview-retake-btn">Retake photo</button>
     </div>
   </div>
 </div>
-<div class="modal-overlay" id="name-modal">
+
+<!-- NAME MODAL -->
+<div class="modal-overlay" id="name-modal" role="dialog" aria-modal="true" aria-labelledby="name-title" data-focus="#name-input">
   <div class="modal-card">
-    <h2>Who's uploading? 👋</h2>
-    <p>Enter your name so everyone knows who took the shot.</p>
-    <input class="modal-input" id="name-input" type="text" placeholder="Your name" maxlength="40">
-    <button class="btn-primary" onclick="saveName()">Let's go</button>
+    <h2 id="name-title">Who’s uploading?</h2>
+    <p>Add your name so everyone knows who took the shot.</p>
+    <label class="field-label" for="name-input">Your name</label>
+    <input class="modal-input" id="name-input" type="text" placeholder="e.g. Alex" maxlength="40" autocomplete="name" enterkeyhint="done">
+    <button class="btn btn-primary" onclick="saveName()">Save my name</button>
   </div>
 </div>
 
 <!-- ADMIN AUTH MODAL -->
-<div class="modal-overlay" id="admin-modal">
+<div class="modal-overlay" id="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-title" data-focus="#admin-pw-input">
   <div class="modal-card">
-    <h2>Admin access 🔒</h2>
+    <h2 id="admin-title">Admin access</h2>
     <p>Enter the admin password to continue.</p>
-    <input class="modal-input" id="admin-pw-input" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')checkAdminPw()">
-    <button class="btn-primary" onclick="checkAdminPw()">Unlock</button>
-    <button class="btn-secondary" onclick="closeAdminModal()">Cancel</button>
+    <label class="field-label" for="admin-pw-input">Password</label>
+    <input class="modal-input" id="admin-pw-input" type="password" autocomplete="current-password">
+    <p class="field-error" id="admin-pw-error" role="alert" hidden>That password isn’t right. Try again.</p>
+    <button class="btn btn-primary" onclick="checkAdminPw()">Unlock admin</button>
+    <button class="btn btn-secondary" onclick="closeAdminModal()">Cancel</button>
   </div>
 </div>
 
 <!-- GALLERY SCREEN -->
 <div class="screen" id="screen-gallery">
- <a href="https://kaungsetlinn.com" style="position:fixed;top:16px;left:16px;z-index:9999;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(15,23,36,0.85);color:#e6f9ec;font-family:system-ui,-apple-system,sans-serif;font-size:13px;font-weight:600;text-decoration:none;border:1px solid rgba(255,255,255,0.15);border-radius:999px;backdrop-filter:blur(6px);transition:background .2s,transform .2s;" onmouseover="this.style.background='rgba(15,23,36,1)';this.style.transform='translateX(-2px)';" onmouseout="this.style.background='rgba(15,23,36,0.85)';this.style.transform='translateX(0)';">← Portfolio</a>
-  <div class="header">
-    <h1>Memo<span class="accent">ries</span></h1>
-    <div style="display:flex;gap:8px">
-      <div class="header-btn" id="refresh-btn" title="Refresh">↻</div>
-      <div class="header-btn" id="admin-open-btn" title="Admin panel" style="font-size:14px">⚙️</div>
+  <header class="header header-gallery">
+    <div class="header-main">
+      <a class="back-link" href="https://kaungsetlinn.com">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Portfolio
+      </a>
+      <h1 aria-label="Memories">Memo<span class="accent">ries</span></h1>
+      <p class="header-sub" id="gallery-count" aria-live="polite"></p>
     </div>
-  </div>
+    <div class="header-actions">
+      <button class="header-btn" id="refresh-btn" aria-label="Refresh gallery" title="Refresh">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+      </button>
+      <button class="header-btn" id="admin-open-btn" aria-label="Admin panel" title="Admin panel">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </header>
   <div class="pull-hint"><span>↓ Pull down 5 seconds for admin panel</span></div>
   <div class="gallery-scroll" id="gallery-scroll">
     <div class="gallery-grid" id="gallery-grid"></div>
     <div class="gallery-empty" id="gallery-empty" style="display:none">
-      <div class="big-icon">📷</div>
-      <p style="color:var(--text-muted);font-size:14px">No photos yet.<br>Be the first to upload!</p>
+      <svg class="icon big-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      <h2>No photos yet</h2>
+      <p>Snap the first one and it will show up here for everyone.</p>
+      <button class="btn btn-primary" onclick="showScreen('camera')">Take a photo</button>
+    </div>
+    <div class="gallery-empty" id="gallery-error" style="display:none" role="alert">
+      <h2>Couldn’t load photos</h2>
+      <p>Check your connection and try again.</p>
+      <button class="btn btn-secondary" onclick="loadGallery()">Reload photos</button>
     </div>
   </div>
-  <div class="bottom-nav">
-    <button class="nav-btn active" id="nav-gallery">
-      <span class="icon">🖼</span>Gallery
+  <nav class="bottom-nav" aria-label="Main">
+    <button class="nav-btn active" id="nav-gallery" aria-current="page">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Gallery
     </button>
     <button class="nav-btn" id="nav-camera">
-      <span class="icon">📷</span>Camera
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
     </button>
-  </div>
+  </nav>
 </div>
 
 <!-- CAMERA SCREEN -->
@@ -525,12 +558,9 @@
   <div id="camera-view" style="position:relative;flex:1;overflow:hidden;background:#000">
     <video id="camera-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
 
-    <!-- FILM FILTER CANVAS (drawn over video) -->
     <!-- CROP OVERLAY: full-width, masks top/bottom like a real phone camera -->
     <div id="crop-overlay" style="position:absolute;inset:0;pointer-events:none;">
-      <!-- Top mask -->
       <div id="crop-mask-top" style="position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,0.55);transition:height 0.3s"></div>
-      <!-- Bottom mask -->
       <div id="crop-mask-bottom" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);transition:height 0.3s"></div>
       <!-- Grid lines inside crop zone -->
       <div id="grid-lines" style="display:none;position:absolute;left:0;right:0;pointer-events:none">
@@ -546,161 +576,156 @@
       <div id="crop-corner-br" style="position:absolute;width:18px;height:18px;border-bottom:2px solid #fff;border-right:2px solid #fff"></div>
     </div>
 
+    <!-- CAMERA ERROR (permission denied / no camera) -->
+    <div class="camera-error" id="camera-error" role="alert">
+      <svg class="icon big-icon" style="width:48px;height:48px;opacity:.6" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      <h2>Camera isn’t available</h2>
+      <p id="camera-error-msg"></p>
+      <div class="camera-error-actions">
+        <button class="btn btn-primary" onclick="startCamera()">Try camera again</button>
+        <button class="btn btn-secondary" onclick="showScreen('gallery')">Open gallery</button>
+      </div>
+    </div>
+
     <!-- TIMER COUNTDOWN -->
-    <div id="timer-display" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;pointer-events:none;z-index:10">
+    <div id="timer-display" aria-live="polite" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;pointer-events:none;z-index:10">
       <span id="timer-count" style="font-size:96px;font-weight:800;color:#fff;text-shadow:0 0 30px rgba(0,0,0,0.8)"></span>
     </div>
 
     <!-- TOP BAR -->
-    <div style="position:absolute;top:0;left:0;right:0;padding:52px 16px 12px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(0,0,0,0.65) 0%,transparent 100%);z-index:5">
-      <button class="cam-btn" id="grid-btn">⊞</button>
-      <button class="cam-btn" id="timer-btn" style="font-size:13px;font-weight:700;min-width:38px">⏱</button>
+    <div class="cam-topbar">
+      <button class="cam-btn" id="grid-btn" aria-label="Show grid" aria-pressed="false">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+      </button>
+      <button class="cam-btn" id="timer-btn" aria-label="Timer off">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
+      </button>
     </div>
 
     <!-- ZOOM TICK BAR + PILLS -->
-    <div style="position:absolute;bottom:170px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:5">
-      <!-- Zoom label -->
-      <div id="zoom-label" style="color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.8);letter-spacing:0.02em">1.0×</div>
+    <div class="zoom-wrap">
+      <div id="zoom-label" style="color:#fff;font-size:14px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.8)">1.0×</div>
       <!-- Tick ruler — full width, draggable -->
       <div id="zoom-ruler" style="position:relative;width:100%;height:32px;cursor:ew-resize;touch-action:none">
         <canvas id="zoom-tick-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
-        <!-- center indicator -->
         <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:2px;height:16px;background:var(--accent);border-radius:1px;pointer-events:none"></div>
       </div>
-      <!-- Zoom pills -->
-      <div style="display:flex;gap:4px;background:rgba(0,0,0,0.45);border-radius:100px;padding:4px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)">
-        <button class="zoom-pill" id="pill-05">0.5×</button>
-        <button class="zoom-pill active" id="pill-1">1×</button>
-        <button class="zoom-pill" id="pill-2">2×</button>
-        <button class="zoom-pill" id="pill-3">3×</button>
+      <div class="zoom-pills" role="group" aria-label="Zoom level">
+        <button class="zoom-pill" id="pill-05" aria-label="Zoom 0.5 times">0.5×</button>
+        <button class="zoom-pill active" id="pill-1" aria-label="Zoom 1 times">1×</button>
+        <button class="zoom-pill" id="pill-2" aria-label="Zoom 2 times">2×</button>
+        <button class="zoom-pill" id="pill-3" aria-label="Zoom 3 times">3×</button>
       </div>
     </div>
 
     <!-- BOTTOM CONTROLS -->
-    <div style="position:absolute;bottom:0;left:0;right:0;padding:0 0 20px;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%);z-index:5">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 32px">
-        <button class="cam-btn" id="ratio-btn" style="font-size:12px;font-weight:700;color:var(--accent);border-color:var(--accent);min-width:44px">full</button>
-        <button class="shutter-btn" id="shutter-btn">
+    <div class="cam-bottombar">
+      <div class="cam-bottombar-row">
+        <button class="cam-btn" id="ratio-btn" aria-label="Aspect ratio: full">full</button>
+        <button class="shutter-btn" id="shutter-btn" aria-label="Take photo">
           <div class="shutter-inner"></div>
         </button>
-        <button class="cam-btn" id="flip-btn" style="display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 7H4"/>
-            <path d="M4 7l4-4M4 7l4 4"/>
-            <path d="M4 17h16"/>
-            <path d="M20 17l-4-4M20 17l-4 4"/>
-          </svg>
+        <button class="cam-btn" id="flip-btn" aria-label="Switch camera">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7H4"/><path d="M4 7l4-4M4 7l4 4"/><path d="M4 17h16"/><path d="M20 17l-4-4M20 17l-4 4"/></svg>
         </button>
       </div>
     </div>
   </div>
 
-  <div class="bottom-nav">
+  <nav class="bottom-nav" aria-label="Main">
     <button class="nav-btn" id="nav-gallery2">
-      <span class="icon">🖼</span>Gallery
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Gallery
     </button>
-    <button class="nav-btn active" id="nav-camera2">
-      <span class="icon">📷</span>Camera
+    <button class="nav-btn active" id="nav-camera2" aria-current="page">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
     </button>
-  </div>
+  </nav>
 </div>
 
 <!-- ADMIN SCREEN -->
 <div class="screen" id="screen-admin">
-  <!-- Header -->
-  <div class="header" style="padding-bottom:0">
-    <h1>Admin <span class="accent">Panel</span></h1>
-    <div class="header-btn" id="admin-close-btn">✕</div>
-  </div>
+  <header class="header header-tight">
+    <h1>Admin <span class="accent">panel</span></h1>
+    <button class="header-btn" id="admin-close-btn" aria-label="Close admin panel">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </header>
 
-  <!-- Tab Bar -->
-  <div style="display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0">
-    <button class="admin-tab active" data-tab="overview">📊 Overview</button>
-    <button class="admin-tab" data-tab="photos">🖼 Photos</button>
-    <button class="admin-tab" data-tab="devices">📱 Devices</button>
-    <button class="admin-tab" data-tab="settings">⚙️ Settings</button>
+  <div class="admin-tabs" role="tablist" aria-label="Admin sections">
+    <button class="admin-tab active" id="tabbtn-overview" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-overview" tabindex="0">Overview</button>
+    <button class="admin-tab" id="tabbtn-photos" data-tab="photos" role="tab" aria-selected="false" aria-controls="tab-photos" tabindex="-1">Photos</button>
+    <button class="admin-tab" id="tabbtn-devices" data-tab="devices" role="tab" aria-selected="false" aria-controls="tab-devices" tabindex="-1">Devices</button>
+    <button class="admin-tab" id="tabbtn-settings" data-tab="settings" role="tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1">Settings</button>
   </div>
 
   <!-- TAB: OVERVIEW -->
-  <div class="admin-tab-content active" id="tab-overview">
-    <div style="padding:16px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div class="stat-card">
-          <div class="stat-num" id="stat-photos">—</div>
-          <div class="stat-label">Total Photos</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="stat-devices">—</div>
-          <div class="stat-label">Devices</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="stat-limit">—</div>
-          <div class="stat-label">Photo Limit</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="stat-today">—</div>
-          <div class="stat-label">Today</div>
-        </div>
+  <div class="admin-tab-content active" id="tab-overview" role="tabpanel" aria-labelledby="tabbtn-overview">
+    <div class="tab-scroll">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num" id="stat-photos">—</div><div class="stat-label">Total photos</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-devices">—</div><div class="stat-label">Devices</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-limit">—</div><div class="stat-label">Photo limit</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-today">—</div><div class="stat-label">Today</div></div>
       </div>
-      <div class="admin-section-title">Recent Uploads</div>
+      <div class="admin-section-title">Recent uploads</div>
       <div id="overview-recent"></div>
     </div>
   </div>
 
   <!-- TAB: PHOTOS -->
-  <div class="admin-tab-content" id="tab-photos">
-    <div style="padding:12px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0">
-      <input class="modal-input" id="photo-search" placeholder="Search by uploader or caption…" style="margin:0;flex:1;padding:9px 12px;font-size:13px">
-      <button class="btn-save" id="photo-search-btn" style="padding:9px 14px;white-space:nowrap">Search</button>
+  <div class="admin-tab-content" id="tab-photos" role="tabpanel" aria-labelledby="tabbtn-photos">
+    <div class="toolbar">
+      <input class="modal-input" id="photo-search" type="search" aria-label="Search photos" placeholder="Search by uploader or caption…" enterkeyhint="search">
+      <button class="btn btn-save" id="photo-search-btn">Search photos</button>
     </div>
-    <div style="display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto">
+    <div class="toolbar toolbar-chips">
       <button class="filter-tag active" data-sort="newest">Newest</button>
       <button class="filter-tag" data-sort="oldest">Oldest</button>
-      <button class="filter-tag" data-sort="uploader">By Name</button>
+      <button class="filter-tag" data-sort="uploader">By name</button>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:12px 16px" id="admin-photo-list"></div>
+    <div class="tab-scroll" id="admin-photo-list"></div>
   </div>
 
   <!-- TAB: DEVICES -->
-  <div class="admin-tab-content" id="tab-devices">
-    <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0">
-      <span style="font-size:13px;color:var(--text-muted)" id="device-count-label">Loading…</span>
-      <button class="btn-save" id="refresh-devices-btn" style="padding:7px 14px;font-size:12px">Refresh</button>
+  <div class="admin-tab-content" id="tab-devices" role="tabpanel" aria-labelledby="tabbtn-devices">
+    <div class="toolbar">
+      <span class="toolbar-label" id="device-count-label">Loading…</span>
+      <button class="btn btn-outline" id="refresh-devices-btn">Refresh list</button>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:12px 16px" id="devices-list"></div>
+    <div class="tab-scroll" id="devices-list"></div>
   </div>
 
   <!-- TAB: SETTINGS -->
-  <div class="admin-tab-content" id="tab-settings">
-    <div style="padding:16px">
+  <div class="admin-tab-content" id="tab-settings" role="tabpanel" aria-labelledby="tabbtn-settings">
+    <div class="tab-scroll">
       <div class="admin-section-title">Security</div>
       <div class="settings-card">
-        <label>Admin Password</label>
-        <div style="display:flex;gap:8px">
-          <input class="modal-input" id="new-pw-input" type="password" placeholder="New password" style="margin:0;flex:1">
-          <button class="btn-save" id="save-pw-btn" style="padding:9px 14px;white-space:nowrap">Save</button>
+        <label for="new-pw-input">Admin password</label>
+        <div class="settings-row">
+          <input class="modal-input" id="new-pw-input" type="password" placeholder="New password" autocomplete="new-password">
+          <button class="btn btn-save" id="save-pw-btn">Save password</button>
         </div>
       </div>
 
-      <div class="admin-section-title">Upload Controls</div>
+      <div class="admin-section-title">Upload controls</div>
       <div class="settings-card">
-        <label>Photo Limit Per Device <span style="color:var(--text-muted);font-weight:400">(0 = unlimited)</span></label>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <input class="modal-input" id="limit-input" type="number" min="0" placeholder="e.g. 10" style="margin:0;flex:1">
-          <button class="btn-save" id="save-limit-btn" style="padding:9px 14px;white-space:nowrap">Save</button>
+        <label for="limit-input">Photo limit per device <span class="hint">(0 = unlimited)</span></label>
+        <div class="settings-row">
+          <input class="modal-input" id="limit-input" type="number" min="0" inputmode="numeric" placeholder="e.g. 10">
+          <button class="btn btn-save" id="save-limit-btn">Save limit</button>
         </div>
       </div>
 
-      <div class="admin-section-title">Danger Zone</div>
-      <div class="settings-card" style="border-color:rgba(255,79,79,0.3)">
-        <label style="color:var(--danger)">Delete All Photos</label>
-        <p style="font-size:12px;color:var(--text-muted);margin:6px 0 10px">Permanently removes every photo from storage and database.</p>
-        <button id="delete-all-btn" style="background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:10px;padding:10px 16px;font-size:13px;cursor:pointer;width:100%">🗑 Delete All Photos</button>
+      <div class="admin-section-title">Danger zone</div>
+      <div class="settings-card danger">
+        <div class="card-title">Delete all photos</div>
+        <p>Permanently removes every photo from storage and the database.</p>
+        <button class="btn btn-danger btn-block" id="delete-all-btn">Delete all photos</button>
       </div>
-      <div class="settings-card" style="border-color:rgba(255,79,79,0.3)">
-        <label style="color:var(--danger)">Reset All Device Counts</label>
-        <p style="font-size:12px;color:var(--text-muted);margin:6px 0 10px">Resets every device's upload count to 0.</p>
-        <button id="reset-all-btn" style="background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:10px;padding:10px 16px;font-size:13px;cursor:pointer;width:100%">↺ Reset All Counts</button>
+      <div class="settings-card danger">
+        <div class="card-title">Reset all device counts</div>
+        <p>Sets every device’s upload count back to 0.</p>
+        <button class="btn btn-danger btn-block" id="reset-all-btn">Reset all counts</button>
       </div>
     </div>
   </div>
@@ -710,6 +735,9 @@
 /* ============================================================
    SUPABASE HELPERS
    ============================================================ */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 function getConfig() {
   return {
     url: localStorage.getItem('sb_url') || SUPABASE_URL,
@@ -859,11 +887,11 @@ function showScreen(name) {
   // update nav active states
   ['nav-gallery','nav-gallery2'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.classList.toggle('active', name === 'gallery');
+    if (el) { const on = name === 'gallery'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
   });
   ['nav-camera','nav-camera2'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.classList.toggle('active', name === 'camera');
+    if (el) { const on = name === 'camera'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
   });
   if (name === 'gallery') { loadGallery(); }
   if (name === 'camera') { startCamera(); }
@@ -874,27 +902,53 @@ function showScreen(name) {
    GALLERY
    ============================================================ */
 let photos = [];
+function skeletonGrid(n = 12) {
+  return Array.from({ length: n }, () => '<div class="gallery-item skel" aria-hidden="true"></div>').join('');
+}
 async function loadGallery() {
   const grid = document.getElementById('gallery-grid');
   const empty = document.getElementById('gallery-empty');
+  const errBox = document.getElementById('gallery-error');
+  const count = document.getElementById('gallery-count');
+  errBox.style.display = 'none';
   if (!isConfigured()) {
     grid.innerHTML = '';
+    count.textContent = '';
     empty.style.display = 'flex';
     return;
   }
-  grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center"><div class="spinner"></div></div>';
+  grid.setAttribute('aria-busy', 'true');
+  grid.innerHTML = skeletonGrid();
   empty.style.display = 'none';
-  photos = await loadPhotos();
+  try {
+    photos = await loadPhotos();
+  } catch (e) {
+    console.error(e);
+    grid.removeAttribute('aria-busy');
+    grid.innerHTML = '';
+    count.textContent = '';
+    errBox.style.display = 'flex';
+    return;
+  }
+  grid.removeAttribute('aria-busy');
   grid.innerHTML = '';
+  count.textContent = photos.length ? `${photos.length} photo${photos.length !== 1 ? 's' : ''}` : '';
   if (photos.length === 0) { empty.style.display = 'flex'; return; }
   photos.forEach((p, i) => {
-    const el = document.createElement('div');
-    el.className = 'gallery-item';
-    el.onclick = () => openLightbox(i);
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'gallery-item skel';
+    el.setAttribute('aria-label', 'Open photo' + (p.uploader ? ' by ' + p.uploader : '') + (p.caption ? ': ' + p.caption : ''));
+    el.addEventListener('click', () => openLightbox(i));
     const img = document.createElement('img');
-    img.src = p.url;
+    img.alt = '';
+    img.decoding = 'async';
     img.loading = 'lazy';
-    img.alt = p.caption || 'Photo';
+    const show = () => { img.classList.add('in'); el.classList.remove('skel'); };
+    img.addEventListener('load', show);
+    img.addEventListener('error', show);
+    img.src = p.url;
+    if (img.complete) show();
     el.appendChild(img);
     grid.appendChild(el);
   });
@@ -903,14 +957,36 @@ async function loadGallery() {
 /* ============================================================
    LIGHTBOX
    ============================================================ */
-function openLightbox(i) {
-  const p = photos[i];
-  document.getElementById('lightbox-img').src = p.url;
+let lightboxIndex = -1, lightboxOpener = null;
+function renderLightbox() {
+  const p = photos[lightboxIndex];
+  if (!p) return;
+  const img = document.getElementById('lightbox-img');
+  img.src = p.url;
+  img.alt = p.caption || ('Photo by ' + (p.uploader || 'a guest'));
   document.getElementById('lightbox-caption').textContent =
     (p.caption ? p.caption + ' · ' : '') + (p.uploader || '') + ' · ' + new Date(p.created_at).toLocaleDateString();
-  document.getElementById('lightbox').classList.add('open');
+  document.getElementById('lightbox-prev').style.visibility = lightboxIndex > 0 ? 'visible' : 'hidden';
+  document.getElementById('lightbox-next').style.visibility = lightboxIndex < photos.length - 1 ? 'visible' : 'hidden';
 }
-function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+function openLightbox(i) {
+  lightboxIndex = i;
+  lightboxOpener = document.activeElement;
+  renderLightbox();
+  document.getElementById('lightbox').classList.add('open');
+  document.getElementById('lightbox-close').focus();
+}
+function stepLightbox(d) {
+  const n = lightboxIndex + d;
+  if (n < 0 || n >= photos.length) return;
+  lightboxIndex = n;
+  renderLightbox();
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  if (lightboxOpener && document.contains(lightboxOpener)) lightboxOpener.focus();
+  lightboxOpener = null;
+}
 
 /* ============================================================
    PULL TO OPEN ADMIN
@@ -971,29 +1047,34 @@ function triggerAdminPanel() {
 async function checkAdminPw() {
   const input = document.getElementById('admin-pw-input').value;
   const btn = document.querySelector('#admin-modal .btn-primary');
-  btn.textContent = 'Checking…'; btn.disabled = true;
+  btn.textContent = 'Checking…'; btn.disabled = true; btn.classList.add('is-loading');
   if (!ADMIN_PASSWORD) ADMIN_PASSWORD = await loadAdminPassword();
-  btn.textContent = 'Unlock'; btn.disabled = false;
+  btn.textContent = 'Unlock admin'; btn.disabled = false; btn.classList.remove('is-loading');
   if (input === ADMIN_PASSWORD) {
     closeAdminModal();
     showScreen('admin');
   } else {
     document.getElementById('admin-pw-input').style.borderColor = 'var(--danger)';
     setTimeout(() => document.getElementById('admin-pw-input').style.borderColor = '', 800);
-    toast('Wrong password');
+    const pwInput = document.getElementById('admin-pw-input');
+    pwInput.setAttribute('aria-invalid', 'true');
+    document.getElementById('admin-pw-error').hidden = false;
+    pwInput.focus();
   }
 }
 function closeAdminModal() {
   document.getElementById('admin-modal').classList.remove('open');
   document.getElementById('admin-pw-input').value = '';
+  document.getElementById('admin-pw-input').removeAttribute('aria-invalid');
+  document.getElementById('admin-pw-error').hidden = true;
 }
 async function updatePassword() {
   const v = document.getElementById('new-pw-input').value.trim();
   if (!v) { toast('Enter a password'); return; }
-  const btn = document.querySelector('.btn-save[onclick="updatePassword()"]');
-  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  const btn = document.getElementById('save-pw-btn');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; btn.classList.add('is-loading'); }
   const ok = await saveAdminPasswordToDB(v);
-  if (btn) { btn.textContent = 'Save'; btn.disabled = false; }
+  if (btn) { btn.textContent = 'Save password'; btn.disabled = false; btn.classList.remove('is-loading'); }
   if (ok) {
     ADMIN_PASSWORD = v;
     document.getElementById('new-pw-input').value = '';
@@ -1020,7 +1101,7 @@ async function savePhotoLimit() {
 let adminPhotoCache = [], adminDeviceCache = [], adminSortMode = 'newest';
 
 function switchAdminTab(tabName) {
-  document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  document.querySelectorAll('.admin-tab').forEach(t => { const on = t.dataset.tab === tabName; t.classList.toggle('active', on); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
   document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabName));
   if (tabName === 'overview')  loadAdminOverview();
   if (tabName === 'photos')    loadAdminPhotos();
@@ -1043,12 +1124,13 @@ async function loadAdminOverview() {
   // Recent 6 photos
   const recent = document.getElementById('overview-recent');
   const latest = allPhotos.slice(0, 6);
-  if (latest.length === 0) { recent.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No photos yet.</p>'; return; }
+  if (latest.length === 0) { recent.innerHTML = '<p style="color:var(--text-muted);font-size:14px">No photos yet.</p>'; return; }
   recent.innerHTML = '';
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:4px;border-radius:10px;overflow:hidden';
   latest.forEach(p => {
     const img = document.createElement('img');
+    img.alt = 'Photo by ' + (p.uploader || 'a guest'); img.loading = 'lazy'; img.decoding = 'async';
     img.src = p.url; img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;display:block';
     grid.appendChild(img);
   });
@@ -1068,21 +1150,22 @@ async function loadAdminPhotos(search = '') {
   if (adminSortMode === 'oldest')   photos.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
   if (adminSortMode === 'uploader') photos.sort((a,b) => (a.uploader||'').localeCompare(b.uploader||''));
   list.innerHTML = '';
-  if (!photos.length) { list.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No photos found.</p>'; return; }
+  if (!photos.length) { list.innerHTML = '<p style="color:var(--text-muted);font-size:14px">No photos found.</p>'; return; }
   photos.forEach(p => {
     const row = document.createElement('div');
     row.className = 'admin-photo-row';
     row.id = 'admin-item-' + p.id;
     const img = document.createElement('img');
+    img.alt = 'Photo by ' + (p.uploader || 'a guest'); img.decoding = 'async';
     img.src = p.url; img.loading = 'lazy';
     const info = document.createElement('div');
     info.className = 'info';
     info.innerHTML = `
-      <div class="meta">📸 ${p.uploader||'Anonymous'} · ${new Date(p.created_at).toLocaleString()}</div>
-      <input class="cap-input" type="text" value="${(p.caption||'').replace(/"/g,'&quot;')}" placeholder="No caption">
+      <div class="meta">${esc(p.uploader || 'Anonymous')} · ${esc(new Date(p.created_at).toLocaleString())}</div>
+      <input class="cap-input" type="text" value="${esc(p.caption || '')}" placeholder="No caption" aria-label="Caption">
       <div class="row-actions">
-        <button class="row-save">Save</button>
-        <button class="row-del">Delete</button>
+        <button class="btn btn-save row-save">Save caption</button>
+        <button class="btn btn-danger row-del">Delete photo</button>
       </div>`;
     info.querySelector('.row-save').addEventListener('click', async () => {
       const cap = info.querySelector('.cap-input').value;
@@ -1113,7 +1196,7 @@ async function loadAdminDevices() {
   adminDeviceCache = devices; PHOTO_LIMIT = limit;
   label.textContent = `${devices.length} device${devices.length !== 1 ? 's' : ''} registered`;
   devList.innerHTML = '';
-  if (!devices.length) { devList.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No devices yet.</p>'; return; }
+  if (!devices.length) { devList.innerHTML = '<p style="color:var(--text-muted);font-size:14px">No devices yet.</p>'; return; }
   devices.forEach(d => {
     const card = document.createElement('div');
     card.className = 'settings-card';
@@ -1121,23 +1204,21 @@ async function loadAdminDevices() {
     const pct = limit > 0 ? Math.min(100, (d.photo_count / limit) * 100) : 0;
     const barColor = d.photo_count >= limit && limit > 0 ? 'var(--danger)' : 'var(--accent)';
     card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="dev-head">
         <div>
-          <div style="font-size:14px;font-weight:600">${d.name||'Unknown'}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Last seen ${new Date(d.last_seen).toLocaleString()}</div>
-          <div style="font-size:11px;color:var(--text-muted)">ID: ${d.device_id?.slice(0,16)}…</div>
+          <div class="dev-name">${esc(d.name || 'Unknown')}</div>
+          <div class="dev-meta">Last seen ${esc(new Date(d.last_seen).toLocaleString())}</div>
+          <div class="dev-meta">ID: ${esc(d.device_id?.slice(0, 16))}…</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:22px;font-weight:800;color:var(--accent)">${d.photo_count}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${limit > 0 ? 'of ' + limit : 'photos'}</div>
+        <div class="dev-count-wrap">
+          <div class="dev-count">${Number(d.photo_count) || 0}</div>
+          <div class="dev-meta">${limit > 0 ? 'of ' + limit : 'photos'}</div>
         </div>
       </div>
-      ${limit > 0 ? `<div style="height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:10px">
-        <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px;transition:width 0.3s"></div>
-      </div>` : ''}
-      <div style="display:flex;gap:8px">
-        <button class="dev-reset-btn" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:7px;font-size:12px;cursor:pointer">↺ Reset</button>
-        <button class="dev-delete-btn" style="background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer">Delete</button>
+      ${limit > 0 ? `<div class="dev-bar"><div class="dev-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>` : ''}
+      <div class="dev-actions">
+        <button class="btn btn-outline dev-reset-btn">Reset count</button>
+        <button class="btn btn-danger dev-delete-btn">Delete device</button>
       </div>`;
     card.querySelector('.dev-reset-btn').addEventListener('click', async () => {
       if (!confirm('Reset photo count to 0?')) return;
@@ -1145,7 +1226,7 @@ async function loadAdminDevices() {
       if (r.ok) {
         if (d.device_id === DEVICE_ID) devicePhotoCount = 0;
         d.photo_count = 0;
-        card.querySelector('[style*="font-size:22px"]').textContent = '0';
+        card.querySelector('.dev-count').textContent = '0';
         toast('Reset ✓');
       } else toast('Reset failed');
     });
@@ -1187,6 +1268,16 @@ let currentRatio = 'full', ratioIndex = 0;
 const RATIOS_DISPLAY = ['full','3:4','1:1','9:16'];
 const ratioMap = { 'full': null, '3:4': 3/4, '1:1': 1, '9:16': 9/16 };
 
+function setCameraError(err) {
+  const box = document.getElementById('camera-error');
+  if (!err) { box.classList.remove('show'); return; }
+  const denied = err.name === 'NotAllowedError' || err.name === 'SecurityError';
+  document.getElementById('camera-error-msg').textContent = denied
+    ? 'Camera access is blocked. Allow the camera for this site in your browser settings, then try again.'
+    : 'We couldn’t start the camera on this device. You can still browse the gallery.';
+  box.classList.add('show');
+}
+
 async function startCamera() {
   const video = document.getElementById('camera-video');
   if (stream) { stream.getTracks().forEach(t => t.stop()); }
@@ -1195,9 +1286,10 @@ async function startCamera() {
       video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false
     });
     video.srcObject = stream;
+    setCameraError(null);
     video.onloadedmetadata = () => { updateCropBox(); drawZoomTicks(1); };
     currentZoom = 1; setActivePill('pill-1'); applyZoom(1); drawZoomTicks(1);
-  } catch (e) { toast('Camera not available on this device'); }
+  } catch (e) { console.error(e); setCameraError(e); }
 }
 
 function switchCamera() { facingMode = facingMode === 'environment' ? 'user' : 'environment'; startCamera(); }
@@ -1317,6 +1409,7 @@ function cycleRatio() {
   ratioIndex = (ratioIndex + 1) % RATIOS_DISPLAY.length;
   currentRatio = RATIOS_DISPLAY[ratioIndex];
   document.getElementById('ratio-btn').textContent = currentRatio;
+  document.getElementById('ratio-btn').setAttribute('aria-label', 'Aspect ratio: ' + currentRatio);
   updateCropBox();
 }
 function updateCropBox() {
@@ -1378,22 +1471,25 @@ function toggleGrid() {
   gridOn = !gridOn;
   document.getElementById('grid-lines').style.display = gridOn ? 'block' : 'none';
   document.getElementById('grid-btn').style.color = gridOn ? 'var(--accent)' : '#fff';
+  document.getElementById('grid-btn').setAttribute('aria-pressed', String(gridOn));
 }
 
 /* ---- TIMER ---- */
+const TIMER_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>';
 const timerOptions = [0,3,5,10]; let timerIndex = 0;
 function cycleTimer() {
   timerIndex = (timerIndex + 1) % timerOptions.length;
   timerSeconds = timerOptions[timerIndex];
   const btn = document.getElementById('timer-btn');
-  btn.textContent = timerSeconds === 0 ? '⏱' : timerSeconds + 's';
+  btn.innerHTML = timerSeconds === 0 ? TIMER_ICON : '<span>' + timerSeconds + 's</span>';
+  btn.setAttribute('aria-label', timerSeconds === 0 ? 'Timer off' : 'Timer ' + timerSeconds + ' seconds');
   btn.style.color = timerSeconds > 0 ? 'var(--accent)' : '#fff';
 }
 
 /* ---- SHOOT ---- */
 async function takePhoto() {
   if (!stream) { toast('Camera not available'); return; }
-  if (!isConfigured()) { toast('Configure Supabase first'); return; }
+  if (!isConfigured()) { toast('This event isn’t set up yet — ask the host'); return; }
   if (!uploaderName) { showNameModal(); return; }
   if (timerRunning) return;
   if (timerSeconds > 0) {
@@ -1453,17 +1549,17 @@ let pendingBlob = null;
 async function submitPreview() {
   if (!pendingBlob) { toast('No photo to upload'); return; }
   const btn = document.getElementById('preview-upload-btn');
-  btn.textContent = 'Uploading…'; btn.disabled = true;
+  btn.textContent = 'Uploading…'; btn.disabled = true; btn.classList.add('is-loading');
   const caption = document.getElementById('preview-caption').value.trim();
   try {
     await doUpload(pendingBlob, 'photo.jpg', caption);
     document.getElementById('preview-modal').classList.remove('open');
     pendingBlob = null;
   } catch(e) {
-    if (e.message !== 'limit_reached') toast('Upload failed — check Supabase config');
+    if (e.message !== 'limit_reached') toast('Upload failed — check your connection and try again');
     console.error(e);
   }
-  btn.textContent = 'Upload'; btn.disabled = false;
+  btn.textContent = 'Upload photo'; btn.disabled = false; btn.classList.remove('is-loading');
 }
 
 function retakePhoto() {
@@ -1501,8 +1597,8 @@ async function doUpload(blob, filename, caption) {
     setTimeout(() => setProgress(0), 600);
   } catch (e) {
     setProgress(0);
-    toast('Upload failed — check Supabase config');
     console.error(e);
+    throw e; // let submitPreview keep the photo on screen so the guest can retry
   }
 }
 function setProgress(pct) {
@@ -1565,6 +1661,7 @@ function toast(msg) {
 
   document.getElementById('preview-upload-btn').addEventListener('click', submitPreview);
   document.getElementById('preview-retake-btn').addEventListener('click', retakePhoto);
+  document.getElementById('preview-caption').addEventListener('keydown', e => { if (e.key === 'Enter') submitPreview(); });
 
   // Admin close
   document.getElementById('admin-close-btn').addEventListener('click', () => showScreen('gallery'));
@@ -1605,7 +1702,7 @@ function toast(msg) {
     const all = await loadPhotos();
     for (const p of all) await deletePhoto(p.id, p.url);
     adminPhotoCache = [];
-    document.getElementById('admin-photo-list').innerHTML = '<p style="color:var(--text-muted);font-size:13px">No photos.</p>';
+    document.getElementById('admin-photo-list').innerHTML = '<p style="color:var(--text-muted);font-size:14px">No photos.</p>';
     toast(`Deleted ${all.length} photos ✓`);
     loadAdminOverview();
   });
@@ -1623,7 +1720,6 @@ function toast(msg) {
 
   // Admin modal
   document.getElementById('admin-pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkAdminPw(); });
-  document.getElementById('admin-close-btn')?.addEventListener('click', () => showScreen('gallery'));
 
   // Keyboard shortcut
   document.addEventListener('keydown', e => {
@@ -1647,6 +1743,86 @@ function toast(msg) {
   window.confirmDelete     = confirmDelete;
 })();
 
+</script>
+
+<script>
+/* ============================================================
+   UX ENHANCEMENTS — dialogs, keyboard, focus
+   ============================================================ */
+(function () {
+  const lb = document.getElementById('lightbox');
+  const FOCUSABLE = 'button:not([disabled]),input:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])';
+
+  // Lightbox: tap the dark area to close, step with the arrow buttons
+  lb.addEventListener('click', e => { if (e.target === lb) closeLightbox(); });
+  document.getElementById('lightbox-prev').addEventListener('click', () => stepLightbox(-1));
+  document.getElementById('lightbox-next').addEventListener('click', () => stepLightbox(1));
+
+  // Modals: move focus in when opened, hand it back when closed
+  const openers = new Map();
+  const observer = new MutationObserver(muts => {
+    muts.forEach(m => {
+      const el = m.target;
+      const isOpen = el.classList.contains('open');
+      const wasOpen = openers.has(el);
+      if (isOpen && !wasOpen) {
+        openers.set(el, document.activeElement);
+        const target = el.querySelector(el.dataset.focus || FOCUSABLE);
+        setTimeout(() => target && target.focus(), 50);
+      } else if (!isOpen && wasOpen) {
+        const o = openers.get(el);
+        openers.delete(el);
+        if (o && o !== document.body && document.contains(o) && o.focus) o.focus();
+      }
+    });
+  });
+  document.querySelectorAll('.modal-overlay').forEach(o => observer.observe(o, { attributes: true, attributeFilter: ['class'] }));
+
+  // Clear the inline password error as soon as the guest types again
+  document.getElementById('admin-pw-input').addEventListener('input', e => {
+    e.target.removeAttribute('aria-invalid');
+    document.getElementById('admin-pw-error').hidden = true;
+  });
+
+  // Admin tabs: arrow keys, Home and End move between tabs
+  const tabs = [...document.querySelectorAll('.admin-tab')];
+  document.querySelector('.admin-tabs').addEventListener('keydown', e => {
+    const i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    let n = null;
+    if (e.key === 'ArrowRight') n = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') n = 0;
+    else if (e.key === 'End') n = tabs.length - 1;
+    if (n === null) return;
+    e.preventDefault(); tabs[n].focus(); tabs[n].click();
+  });
+
+  document.addEventListener('keydown', e => {
+    const adminModal = document.getElementById('admin-modal');
+    const previewModal = document.getElementById('preview-modal');
+    if (e.key === 'Escape') {
+      if (lb.classList.contains('open')) { closeLightbox(); return; }
+      if (adminModal.classList.contains('open')) { closeAdminModal(); return; }
+      if (previewModal.classList.contains('open')) { retakePhoto(); return; }
+    }
+    if (lb.classList.contains('open')) {
+      if (e.key === 'ArrowLeft') stepLightbox(-1);
+      if (e.key === 'ArrowRight') stepLightbox(1);
+    }
+    // Keep Tab inside whichever dialog is open
+    if (e.key === 'Tab') {
+      const dlg = document.querySelector('.modal-overlay.open, #lightbox.open');
+      if (!dlg) return;
+      const items = [...dlg.querySelectorAll(FOCUSABLE)].filter(n => getComputedStyle(n).visibility !== 'hidden' && n.getClientRects().length);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!dlg.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    }
+  });
+})();
 </script>
 </body>
 </html>
