@@ -265,6 +265,35 @@
     color:#fff;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;
   }
   .cam-count svg{width:16px;height:16px}
+  /* Composition grid overlays */
+  #grid-svg{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;filter:drop-shadow(0 0 1px rgb(0 0 0 / .7))}
+  #grid-svg .g{stroke:rgb(255 255 255 / .7);stroke-width:1.25;fill:none}
+  #grid-svg .f{stroke:rgb(255 255 255 / .45);stroke-width:1;stroke-dasharray:5 5;fill:none}
+  #grid-svg .a{stroke:var(--accent);stroke-width:2.25;fill:none;stroke-linecap:round}
+  .grid-menu{
+    position:absolute;left:var(--gap-m);top:calc(var(--safe-top) + 84px);z-index:7;
+    width:min(310px,calc(100% - 32px));max-height:calc(100% - 330px);overflow-y:auto;
+    background:rgb(24 24 26 / .94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--border-strong);border-radius:16px;padding:6px;
+  }
+  .grid-menu[hidden]{display:none}
+  .grid-opt{
+    display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;
+    min-height:48px;padding:8px 12px;background:none;border:none;border-radius:10px;
+    text-align:left;color:#fff;
+  }
+  .grid-opt .t{font-size:15px;font-weight:600}
+  .grid-opt .d{font-size:12px;color:var(--text-muted)}
+  .grid-opt[aria-checked="true"]{background:rgb(200 240 87 / .14)}
+  .grid-opt[aria-checked="true"] .t{color:var(--accent)}
+  @media (hover:hover){.grid-opt:hover{background:rgb(255 255 255 / .08)}}
+  .grid-label{
+    position:absolute;left:50%;top:calc(var(--safe-top) + 90px);transform:translateX(-50%);z-index:6;
+    background:rgb(0 0 0 / .6);color:#fff;font-size:13px;font-weight:700;
+    padding:6px 14px;border-radius:100px;pointer-events:none;
+    opacity:0;transition:opacity 200ms;white-space:nowrap;
+  }
+  .grid-label.show{opacity:1}
   .cam-count.full{color:var(--danger);border-color:var(--danger)}
   .modal-card .btn-row{display:flex;flex-direction:column;gap:var(--gap-s)}
   .modal-card .btn-row .btn-secondary{margin-top:0}
@@ -634,10 +663,7 @@
       <div id="crop-mask-bottom" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);transition:height 0.3s"></div>
       <!-- Grid lines inside crop zone -->
       <div id="grid-lines" style="display:none;position:absolute;left:0;right:0;pointer-events:none">
-        <div style="position:absolute;left:33.33%;top:0;bottom:0;border-left:1px solid rgba(255,255,255,0.3)"></div>
-        <div style="position:absolute;left:66.66%;top:0;bottom:0;border-left:1px solid rgba(255,255,255,0.3)"></div>
-        <div style="position:absolute;top:33.33%;left:0;right:0;border-top:1px solid rgba(255,255,255,0.3)"></div>
-        <div style="position:absolute;top:66.66%;left:0;right:0;border-top:1px solid rgba(255,255,255,0.3)"></div>
+        <svg id="grid-svg" aria-hidden="true"></svg>
       </div>
       <!-- Corner brackets on crop zone -->
       <div id="crop-corner-tl" style="position:absolute;width:18px;height:18px;border-top:2px solid #fff;border-left:2px solid #fff"></div>
@@ -664,7 +690,7 @@
 
     <!-- TOP BAR -->
     <div class="cam-topbar">
-      <button class="cam-btn" id="grid-btn" aria-label="Show grid" aria-pressed="false">
+      <button class="cam-btn" id="grid-btn" aria-label="Composition grid: off" aria-haspopup="menu" aria-expanded="false" aria-controls="grid-menu">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
       </button>
       <div class="cam-count" id="cam-count" role="status" aria-live="polite">
@@ -675,6 +701,10 @@
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
       </button>
     </div>
+
+    <!-- GRID PICKER -->
+    <div class="grid-menu" id="grid-menu" role="menu" aria-label="Composition grid" hidden></div>
+    <div class="grid-label" id="grid-label" aria-live="polite"></div>
 
     <!-- ZOOM TICK BAR + PILLS -->
     <div class="zoom-wrap">
@@ -1585,7 +1615,7 @@ async function confirmDelete(id, url) {
    CAMERA
    ============================================================ */
 let stream = null, facingMode = 'environment', canvas;
-let currentZoom = 1, timerSeconds = 0, gridOn = false, timerRunning = false;
+let currentZoom = 1, timerSeconds = 0, gridOn = false, gridMode = 'off', timerRunning = false;
 let currentRatio = 'full', ratioIndex = 0;
 const RATIOS_DISPLAY = ['full','3:4','1:1','9:16'];
 const ratioMap = { 'full': null, '3:4': 3/4, '1:1': 1, '9:16': 9/16 };
@@ -1755,6 +1785,7 @@ function updateCropBox() {
     gridLines.style.top    = '0px';
     gridLines.style.height = vh + 'px';
     [tl,tr,bl,br].forEach(c => c.style.opacity = '0');
+    drawGrid();
     return;
   }
 
@@ -1781,6 +1812,7 @@ function updateCropBox() {
 
   gridLines.style.top    = Math.max(0, cropY) + 'px';
   gridLines.style.height = cropH + 'px';
+  drawGrid();
 
   tl.style.top    = Math.max(0, cropY) + 'px'; tl.style.left  = cropX + 'px';
   tr.style.top    = Math.max(0, cropY) + 'px'; tr.style.right = cropX + 'px';
@@ -1789,11 +1821,150 @@ function updateCropBox() {
 }
 
 /* ---- GRID ---- */
-function toggleGrid() {
-  gridOn = !gridOn;
+const GRID_MODES = [
+  { id: 'off',      name: 'Off',               desc: 'No overlay' },
+  { id: 'thirds',   name: 'Rule of Thirds',    desc: 'General photography, fast-paced shots' },
+  { id: 'phi',      name: 'Phi Grid',          desc: 'Fine-art landscapes, classical portraits' },
+  { id: 'spiral',   name: 'Golden Spiral',     desc: 'Landscapes, environmental portraits, macro' },
+  { id: 'triangle', name: 'Golden Triangle',   desc: 'Action, sports, street, diagonal still-life' },
+  { id: 'dynamic',  name: 'Dynamic Symmetry',  desc: 'Multi-subject scenes, editorial, fine art' },
+  { id: 'diagonal', name: 'Diagonal Method',   desc: 'Eyes and details in portraits, macro, product' },
+  { id: 'center',   name: 'Center / Symmetry', desc: 'Facades, minimalism, reflections, square' },
+  { id: 'frame',    name: 'Frame in Frame',    desc: 'Doorways, arches, windows' },
+  { id: 'leading',  name: 'Leading Lines',     desc: 'Roads, bridges, shorelines, hallways' }
+];
+function gridShapes(id, w, h) {
+  const f = n => +n.toFixed(1);
+  const line = (x1, y1, x2, y2, c = 'g') => `<line class="${c}" x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}"/>`;
+  // foot of the perpendicular from P onto the line A-B
+  const foot = (px, py, ax, ay, bx, by) => {
+    const dx = bx - ax, dy = by - ay, t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy);
+    return [ax + t * dx, ay + t * dy];
+  };
+  const m = Math.min(w, h);
+  switch (id) {
+    case 'thirds':
+      return line(w/3, 0, w/3, h) + line(2*w/3, 0, 2*w/3, h) + line(0, h/3, w, h/3) + line(0, 2*h/3, w, 2*h/3);
+    case 'phi': { // 30.9% / 38.2% / 30.9%
+      const a = .309, b = .691;
+      return line(w*a, 0, w*a, h) + line(w*b, 0, w*b, h) + line(0, h*a, w, h*a) + line(0, h*b, w, h*b);
+    }
+    case 'triangle': { // one diagonal + two perpendiculars from the other corners
+      const [x1, y1] = foot(0, 0, 0, h, w, 0);
+      const [x2, y2] = foot(w, h, 0, h, w, 0);
+      return line(0, h, w, 0) + line(0, 0, x1, y1) + line(w, h, x2, y2);
+    }
+    case 'dynamic': { // armature of the rectangle: diagonals, reciprocals, barriers
+      const pts = [
+        foot(0, 0, 0, h, w, 0), foot(w, h, 0, h, w, 0),
+        foot(w, 0, 0, 0, w, h), foot(0, h, 0, 0, w, h)
+      ];
+      const corners = [[0, 0], [w, h], [w, 0], [0, h]];
+      let out = line(0, 0, w, h) + line(0, h, w, 0);
+      pts.forEach(([x, y], i) => { out += line(corners[i][0], corners[i][1], x, y); });
+      pts.forEach(([x, y]) => { out += line(x, 0, x, h, 'f') + line(0, y, w, y, 'f'); });
+      return out;
+    }
+    case 'diagonal': // 45° lines from each corner
+      return line(0, 0, m, m) + line(w, 0, w - m, m) + line(0, h, m, h - m) + line(w, h, w - m, h - m);
+    case 'center':
+      return line(w/2, 0, w/2, h) + line(0, h/2, w, h/2) +
+             `<circle class="g" cx="${f(w/2)}" cy="${f(h/2)}" r="${f(m*.07)}"/>` +
+             `<rect class="f" x="${f(w/2 - m*.3)}" y="${f(h/2 - m*.3)}" width="${f(m*.6)}" height="${f(m*.6)}"/>`;
+    case 'frame':
+      return `<rect class="g" x="${f(w*.12)}" y="${f(h*.12)}" width="${f(w*.76)}" height="${f(h*.76)}" rx="6"/>` +
+             `<rect class="f" x="${f(w*.28)}" y="${f(h*.28)}" width="${f(w*.44)}" height="${f(h*.44)}" rx="4"/>`;
+    case 'leading': {
+      const vx = w / 2, vy = h * .4;
+      let out = line(0, vy, w, vy, 'f');
+      [[0, h], [w*.25, h], [w*.75, h], [w, h], [0, h*.65], [w, h*.65]].forEach(([x, y]) => { out += line(x, y, vx, vy); });
+      return out + `<circle class="a" cx="${f(vx)}" cy="${f(vy)}" r="5"/>`;
+    }
+    case 'spiral': { // golden rectangle subdivided into squares, quarter arc through each
+      const PHI = 1.618034, land = w >= h;
+      const mp = (x, y) => land ? [x / PHI * w, y * h] : [y * w, x / PHI * h];
+      const rr = r => land ? [r / PHI * w, r * h] : [r * w, r / PHI * h];
+      let x = 0, y = 0, W = PHI, H = 1, d = '';
+      for (let i = 0; i < 10; i++) {
+        let s, e, c, side;
+        switch (i % 4) {
+          case 0: side = H; s = [x, y + H];         e = [x + H, y];         c = [x + H, y + H];     x += H; W -= H; break;
+          case 1: side = W; s = [x, y];             e = [x + W, y + W];     c = [x, y + W];         y += W; H -= W; break;
+          case 2: side = H; s = [x + W, y];         e = [x + W - H, y + H]; c = [x + W - H, y];    W -= H; break;
+          default: side = W; s = [x + W, y + H];    e = [x, y + H - W];     c = [x + W, y + H - W]; H -= W; break;
+        }
+        const S = mp(...s), E = mp(...e), C = mp(...c), [rx, ry] = rr(side);
+        const sweep = ((S[0]-C[0]) * (E[1]-C[1]) - (S[1]-C[1]) * (E[0]-C[0])) > 0 ? 1 : 0;
+        if (i === 0) d += `M${f(S[0])} ${f(S[1])}`;
+        d += `A${f(rx)} ${f(ry)} 0 0 ${sweep} ${f(E[0])} ${f(E[1])}`;
+      }
+      return `<path class="a" d="${d}"/>`;
+    }
+    default: return '';
+  }
+}
+function drawGrid() {
+  const box = document.getElementById('grid-lines');
+  const svg = document.getElementById('grid-svg');
+  if (!box || !svg) return;
+  if (gridMode === 'off') { svg.innerHTML = ''; return; }
+  const w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) return;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = gridShapes(gridMode, w, h);
+}
+let gridLabelTimer;
+function setGridMode(id, announce = true) {
+  const mode = GRID_MODES.find(g => g.id === id) || GRID_MODES[0];
+  gridMode = mode.id;
+  gridOn = gridMode !== 'off';
+  try { localStorage.setItem('gridMode', gridMode); } catch {}
   document.getElementById('grid-lines').style.display = gridOn ? 'block' : 'none';
-  document.getElementById('grid-btn').style.color = gridOn ? 'var(--accent)' : '#fff';
-  document.getElementById('grid-btn').setAttribute('aria-pressed', String(gridOn));
+  const btn = document.getElementById('grid-btn');
+  btn.style.color = gridOn ? 'var(--accent)' : '#fff';
+  btn.style.borderColor = gridOn ? 'var(--accent)' : '';
+  btn.setAttribute('aria-label', 'Composition grid: ' + mode.name.toLowerCase());
+  document.querySelectorAll('.grid-opt').forEach(o => o.setAttribute('aria-checked', String(o.dataset.id === mode.id)));
+  drawGrid();
+  if (announce) {
+    const lab = document.getElementById('grid-label');
+    lab.textContent = mode.name === 'Off' ? 'Grid off' : mode.name;
+    lab.classList.add('show');
+    clearTimeout(gridLabelTimer);
+    gridLabelTimer = setTimeout(() => lab.classList.remove('show'), 1600);
+  }
+}
+function closeGridMenu() {
+  document.getElementById('grid-menu').hidden = true;
+  document.getElementById('grid-btn').setAttribute('aria-expanded', 'false');
+}
+function toggleGrid() {
+  const menu = document.getElementById('grid-menu');
+  const open = menu.hidden;
+  menu.hidden = !open;
+  document.getElementById('grid-btn').setAttribute('aria-expanded', String(open));
+  if (open) { const cur = menu.querySelector('[aria-checked="true"]'); cur && cur.scrollIntoView({ block: 'nearest' }); }
+}
+function initGrid() {
+  const menu = document.getElementById('grid-menu');
+  GRID_MODES.forEach(g => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'grid-opt'; b.dataset.id = g.id;
+    b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', 'false');
+    b.innerHTML = `<span class="t"></span><span class="d"></span>`;
+    b.querySelector('.t').textContent = g.name;
+    b.querySelector('.d').textContent = g.desc;
+    b.addEventListener('click', () => { setGridMode(g.id); closeGridMenu(); });
+    menu.appendChild(b);
+  });
+  // tap the camera (outside the menu) or press Escape to close it
+  document.getElementById('camera-view').addEventListener('click', e => {
+    if (!menu.hidden && !menu.contains(e.target) && !e.target.closest('#grid-btn')) closeGridMenu();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) closeGridMenu(); });
+  let saved = 'off';
+  try { saved = localStorage.getItem('gridMode') || 'off'; } catch {}
+  setGridMode(saved, false);
 }
 
 /* ---- TIMER ---- */
@@ -1992,6 +2163,7 @@ function toast(msg) {
 
   // Camera controls
   document.getElementById('grid-btn').addEventListener('click', toggleGrid);
+  initGrid();
   document.getElementById('timer-btn').addEventListener('click', cycleTimer);
   document.getElementById('ratio-btn').addEventListener('click', cycleRatio);
   document.getElementById('shutter-btn').addEventListener('click', takePhoto);
