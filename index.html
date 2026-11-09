@@ -182,6 +182,39 @@
   .gallery-item img.in{opacity:1}
   .gallery-item.loaded{min-height:0}
   .gallery-item:focus-visible{outline-offset:-3px}
+  /* One post per person: bordered carousel of their photos */
+  .carousel{
+    position:relative;margin:0 var(--gap-m);
+    border:2px solid var(--border-strong);border-radius:14px;
+    overflow:hidden;background:var(--surface2);
+  }
+  .slides{
+    display:flex;overflow-x:auto;aspect-ratio:4/5;
+    scroll-snap-type:x mandatory;overscroll-behavior-x:contain;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .slides::-webkit-scrollbar{display:none}
+  .slides:focus-visible{outline-offset:-5px}
+  .slide{flex:0 0 100%;height:100%;min-height:0;scroll-snap-align:center;scroll-snap-stop:always}
+  .slide img{height:100%;max-height:none}
+  .slide-count{
+    position:absolute;top:10px;right:10px;z-index:2;
+    background:rgb(0 0 0 / .6);color:#fff;font-size:12px;font-weight:700;
+    padding:4px 10px;border-radius:100px;font-variant-numeric:tabular-nums;
+  }
+  .car-nav{
+    position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+    width:44px;height:44px;border-radius:50%;
+    background:rgb(0 0 0 / .55);border:1px solid rgb(255 255 255 / .4);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .car-nav.prev{left:8px}
+  .car-nav.next{right:8px}
+  .car-nav[hidden]{display:none}
+  @media (hover:none){.car-nav{display:none}}
+  .dots{display:flex;justify-content:center;gap:6px;padding-top:var(--gap-s)}
+  .dot{width:6px;height:6px;border-radius:50%;background:rgb(255 255 255 / .3);transition:background-color 150ms,transform 150ms}
+  .dot.on{background:var(--accent);transform:scale(1.25)}
   .post-skel .post-head{opacity:.6}
   .skel-line{height:12px;border-radius:6px;width:40%}
   /* Skeleton: show the shape before the content */
@@ -225,6 +258,16 @@
     transition:transform 400ms cubic-bezier(.34,1.56,.64,1),background-color 100ms;
   }
   .cam-btn:active{transform:scale(.92);transition-duration:80ms}
+  .cam-count{
+    display:flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;
+    background:rgb(0 0 0 / .45);border:1px solid rgb(255 255 255 / .35);border-radius:100px;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    color:#fff;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  .cam-count svg{width:16px;height:16px}
+  .cam-count.full{color:var(--danger);border-color:var(--danger)}
+  .modal-card .btn-row{display:flex;flex-direction:column;gap:var(--gap-s)}
+  .modal-card .btn-row .btn-secondary{margin-top:0}
   #ratio-btn{color:var(--accent);border-color:var(--accent);font-size:13px}
   .shutter-btn{
     width:72px;height:72px;border-radius:50%;
@@ -511,6 +554,18 @@
   </div>
 </div>
 
+<!-- CONFIRM MODAL (returning device / previous record) -->
+<div class="modal-overlay" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" data-focus="#confirm-yes">
+  <div class="modal-card">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-text"></p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="confirm-yes"></button>
+      <button class="btn btn-secondary" id="confirm-no"></button>
+    </div>
+  </div>
+</div>
+
 <!-- ADMIN AUTH MODAL -->
 <div class="modal-overlay" id="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-title" data-focus="#admin-pw-input">
   <div class="modal-card">
@@ -612,6 +667,10 @@
       <button class="cam-btn" id="grid-btn" aria-label="Show grid" aria-pressed="false">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
       </button>
+      <div class="cam-count" id="cam-count" role="status" aria-live="polite">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        <span id="cam-count-text">0 photos</span>
+      </div>
       <button class="cam-btn" id="timer-btn" aria-label="Timer off">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
       </button>
@@ -824,12 +883,65 @@ async function savePhotoLimitToDB(limit) {
   });
   return r.ok;
 }
-async function registerOrUpdateDevice() {
+/* Camera tab: how many photos this device has taken */
+function updateCamCount() {
+  const el = document.getElementById('cam-count');
+  const txt = document.getElementById('cam-count-text');
+  if (!el || !txt) return;
+  const n = devicePhotoCount || 0;
+  if (PHOTO_LIMIT > 0) {
+    txt.textContent = n >= PHOTO_LIMIT ? `${n} / ${PHOTO_LIMIT} · limit reached` : `${n} / ${PHOTO_LIMIT}`;
+    el.classList.toggle('full', n >= PHOTO_LIMIT);
+  } else {
+    txt.textContent = `${n} photo${n !== 1 ? 's' : ''}`;
+    el.classList.remove('full');
+  }
+}
+async function refreshDeviceCount() {
   if (!isConfigured()) return;
+  try {
+    const [r, lim] = await Promise.all([
+      sbFetch(`/rest/v1/devices?device_id=eq.${encodeURIComponent(DEVICE_ID)}&select=photo_count`),
+      loadPhotoLimit()
+    ]);
+    if (r.ok) { const rows = await r.json(); if (rows[0]) devicePhotoCount = rows[0].photo_count || 0; }
+    PHOTO_LIMIT = lim;
+  } catch {}
+  updateCamCount();
+}
+/* Promise-based yes/no dialog */
+function askConfirm({ title, text, yes, no }) {
+  return new Promise(resolve => {
+    const m = document.getElementById('confirm-modal');
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-text').textContent = text;
+    const y = document.getElementById('confirm-yes'), n = document.getElementById('confirm-no');
+    y.textContent = yes; n.textContent = no;
+    const done = v => { y.onclick = n.onclick = null; m.classList.remove('open'); resolve(v); };
+    y.onclick = () => done(true);
+    n.onclick = () => done(false);
+    m.classList.add('open');
+  });
+}
+/* Look for another device already registered under this name */
+async function findPreviousRecord(name) {
+  if (!isConfigured()) return null;
+  const clean = name.replace(/[*%,()]/g, '').trim();
+  if (!clean) return null;
+  try {
+    const r = await sbFetch(`/rest/v1/devices?name=ilike.${encodeURIComponent(clean)}&device_id=neq.${encodeURIComponent(DEVICE_ID)}&select=*&order=last_seen.desc&limit=1`);
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0] || null;
+  } catch { return null; }
+}
+async function registerOrUpdateDevice() {
+  if (!isConfigured()) return null;
   // Check if device exists
   const r = await sbFetch(`/rest/v1/devices?device_id=eq.${DEVICE_ID}&select=*`);
-  if (!r.ok) return;
+  if (!r.ok) return null;
   const rows = await r.json();
+  const existing = rows[0] || null;
   if (rows.length === 0) {
     // New device — insert
     await sbFetch(`/rest/v1/devices`, {
@@ -845,6 +957,8 @@ async function registerOrUpdateDevice() {
       body: JSON.stringify({ name: uploaderName || rows[0].name, last_seen: new Date().toISOString() })
     });
   }
+  updateCamCount();
+  return existing;
 }
 async function incrementDeviceCount() {
   devicePhotoCount++;
@@ -917,7 +1031,7 @@ function showScreen(name) {
     if (el) { const on = name === 'camera'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
   });
   if (name === 'gallery') { loadGallery(); }
-  if (name === 'camera') { startCamera(); }
+  if (name === 'camera') { startCamera(); updateCamCount(); refreshDeviceCount(); }
   if (name === 'admin') { loadAdminGrid(); }
 }
 
@@ -937,6 +1051,109 @@ function timeAgo(d) {
   if (sec < 86400) return Math.floor(sec / 3600) + 'h';
   if (sec < 604800) return Math.floor(sec / 86400) + 'd';
   return new Date(d).toLocaleDateString();
+}
+function buildPost(items) {
+  // items: [{p, i}] oldest -> newest; i = index in the global `photos` array (for the lightbox)
+  const n = items.length;
+  const latest = items[n - 1].p;
+  const name = latest.uploader || 'Anonymous';
+  const post = document.createElement('article');
+  post.className = 'post';
+
+  // Header: avatar, username + description (top left), time (top right)
+  const head = document.createElement('div');
+  head.className = 'post-head';
+  const av = document.createElement('div');
+  av.className = 'post-avatar';
+  av.setAttribute('aria-hidden', 'true');
+  av.textContent = Array.from(name.trim())[0] || '?';
+  const meta = document.createElement('div');
+  meta.className = 'post-meta';
+  const user = document.createElement('div');
+  user.className = 'post-user';
+  user.textContent = name;
+  const cap = document.createElement('div');
+  cap.className = 'post-caption';
+  meta.append(user, cap);
+  const time = document.createElement('time');
+  time.className = 'post-time';
+  head.append(av, meta, time);
+
+  // Carousel
+  const car = document.createElement('div');
+  car.className = 'carousel';
+  const slides = document.createElement('div');
+  slides.className = 'slides';
+  slides.tabIndex = 0;
+  slides.setAttribute('role', 'group');
+  slides.setAttribute('aria-label', `${n} photo${n !== 1 ? 's' : ''} by ${name}`);
+  items.forEach(({ p, i }, k) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'gallery-item slide skel';
+    el.setAttribute('aria-label', `Open photo ${k + 1} of ${n} by ${name}` + (p.caption ? ': ' + p.caption : ''));
+    el.addEventListener('click', () => openLightbox(i));
+    const img = document.createElement('img');
+    img.alt = p.caption || `Photo ${k + 1} by ${name}`;
+    img.decoding = 'async';
+    img.loading = k < 2 ? 'eager' : 'lazy';
+    const show = () => { img.classList.add('in'); el.classList.remove('skel'); el.classList.add('loaded'); };
+    img.addEventListener('load', show);
+    img.addEventListener('error', show);
+    img.src = p.url;
+    if (img.complete) show();
+    el.appendChild(img);
+    slides.appendChild(el);
+  });
+  car.appendChild(slides);
+
+  let counter = null, prev = null, next = null, dots = [];
+  if (n > 1) {
+    counter = document.createElement('span');
+    counter.className = 'slide-count';
+    counter.setAttribute('aria-hidden', 'true');
+    car.appendChild(counter);
+    const chev = d => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+    prev = document.createElement('button');
+    prev.type = 'button'; prev.className = 'car-nav prev'; prev.setAttribute('aria-label', 'Previous photo');
+    prev.innerHTML = chev('m15 18-6-6 6-6');
+    next = document.createElement('button');
+    next.type = 'button'; next.className = 'car-nav next'; next.setAttribute('aria-label', 'Next photo');
+    next.innerHTML = chev('m9 18 6-6-6-6');
+    prev.addEventListener('click', () => slides.scrollBy({ left: -slides.clientWidth, behavior: 'smooth' }));
+    next.addEventListener('click', () => slides.scrollBy({ left: slides.clientWidth, behavior: 'smooth' }));
+    car.append(prev, next);
+  }
+  post.append(head, car);
+
+  if (n > 1 && n <= 10) {
+    const dotBar = document.createElement('div');
+    dotBar.className = 'dots';
+    dotBar.setAttribute('aria-hidden', 'true');
+    dots = items.map(() => { const d = document.createElement('span'); d.className = 'dot'; dotBar.appendChild(d); return d; });
+    post.appendChild(dotBar);
+  }
+
+  // Keep description, time, counter and dots in step with the visible slide
+  let cur = -1, raf = 0;
+  const sync = () => {
+    const w = slides.clientWidth || 1;
+    const k = Math.max(0, Math.min(n - 1, Math.round(slides.scrollLeft / w)));
+    if (k === cur) return;
+    cur = k;
+    const p = items[k].p;
+    cap.textContent = p.caption || '';
+    cap.style.display = p.caption ? '' : 'none';
+    time.dateTime = p.created_at;
+    time.textContent = timeAgo(p.created_at);
+    if (counter) counter.textContent = `${k + 1}/${n}`;
+    if (prev) prev.hidden = k === 0;
+    if (next) next.hidden = k === n - 1;
+    dots.forEach((d, j) => d.classList.toggle('on', j === k));
+  };
+  slides.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(sync); }, { passive: true });
+  sync();
+  return post;
 }
 async function loadGallery() {
   const grid = document.getElementById('gallery-grid');
@@ -967,54 +1184,15 @@ async function loadGallery() {
   grid.innerHTML = '';
   count.textContent = photos.length ? `${photos.length} photo${photos.length !== 1 ? 's' : ''}` : '';
   if (photos.length === 0) { empty.style.display = 'flex'; return; }
+  // One post per device (or per name when there is no device id); newest activity first
+  const groups = new Map();
   photos.forEach((p, i) => {
-    const name = p.uploader || 'Anonymous';
-    const post = document.createElement('article');
-    post.className = 'post';
-
-    const head = document.createElement('div');
-    head.className = 'post-head';
-    const av = document.createElement('div');
-    av.className = 'post-avatar';
-    av.setAttribute('aria-hidden', 'true');
-    av.textContent = Array.from(name.trim())[0] || '?';
-    const meta = document.createElement('div');
-    meta.className = 'post-meta';
-    const user = document.createElement('div');
-    user.className = 'post-user';
-    user.textContent = name;
-    meta.appendChild(user);
-    if (p.caption) {
-      const cap = document.createElement('div');
-      cap.className = 'post-caption';
-      cap.textContent = p.caption;
-      meta.appendChild(cap);
-    }
-    const time = document.createElement('time');
-    time.className = 'post-time';
-    time.dateTime = p.created_at;
-    time.textContent = timeAgo(p.created_at);
-    head.append(av, meta, time);
-
-    const el = document.createElement('button');
-    el.type = 'button';
-    el.className = 'gallery-item skel';
-    el.setAttribute('aria-label', 'Open photo by ' + name + (p.caption ? ': ' + p.caption : ''));
-    el.addEventListener('click', () => openLightbox(i));
-    const img = document.createElement('img');
-    img.alt = p.caption || ('Photo by ' + name);
-    img.decoding = 'async';
-    img.loading = i < 2 ? 'eager' : 'lazy';
-    const show = () => { img.classList.add('in'); el.classList.remove('skel'); el.classList.add('loaded'); };
-    img.addEventListener('load', show);
-    img.addEventListener('error', show);
-    img.src = p.url;
-    if (img.complete) show();
-    el.appendChild(img);
-
-    post.append(head, el);
-    grid.appendChild(post);
+    const key = p.device_id || ('u:' + (p.uploader || 'Anonymous'));
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ p, i });
   });
+  groups.forEach(items => grid.appendChild(buildPost(items.slice().reverse())));
+  count.textContent = `${photos.length} photo${photos.length !== 1 ? 's' : ''} · ${groups.size} ${groups.size !== 1 ? 'people' : 'person'}`;
 }
 
 /* ============================================================
@@ -1736,6 +1914,7 @@ async function doUpload(blob, filename, caption) {
     setProgress(40);
     await uploadPhoto(blob, filename, caption);
     await incrementDeviceCount();
+    updateCamCount();
     setProgress(100);
     toast(`Photo uploaded! ✓ (${devicePhotoCount}/${PHOTO_LIMIT > 0 ? PHOTO_LIMIT : '∞'})`);
     setTimeout(() => setProgress(0), 600);
@@ -1759,7 +1938,28 @@ async function saveName() {
   uploaderName = v;
   localStorage.setItem('uploaderName', v);
   document.getElementById('name-modal').classList.remove('open');
+  // Another device already uses this name? Offer to pick up that record.
+  const prev = await findPreviousRecord(v);
+  if (prev) {
+    const n = prev.photo_count || 0;
+    const when = prev.last_seen ? new Date(prev.last_seen).toLocaleDateString() : '';
+    const yes = await askConfirm({
+      title: 'Is this you?',
+      text: `We found a previous record for “${prev.name}”: ${n} photo${n !== 1 ? 's' : ''}${when ? ', last active ' + when : ''}. Continue with it?`,
+      yes: 'Yes, continue my record',
+      no: 'No, I’m new'
+    });
+    if (yes) {
+      localStorage.setItem('device_id', prev.device_id);
+      sessionStorage.setItem('welcomed', '1');
+      location.reload();
+      return;
+    }
+  }
   await registerOrUpdateDevice();
+  sessionStorage.setItem('welcomed', '1');
+  PHOTO_LIMIT = await loadPhotoLimit();
+  updateCamCount();
 }
 document.getElementById('name-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') saveName();
@@ -1878,8 +2078,26 @@ function toast(msg) {
   if (!uploaderName) {
     setTimeout(showNameModal, 500);
   } else {
-    await registerOrUpdateDevice();
+    const prev = await registerOrUpdateDevice();
     PHOTO_LIMIT = await loadPhotoLimit();
+    updateCamCount();
+    // Returning device: confirm once per browser session
+    if (prev && !sessionStorage.getItem('welcomed')) {
+      const n = prev.photo_count || 0;
+      const same = await askConfirm({
+        title: `Welcome back, ${uploaderName}!`,
+        text: `This device already has a record with ${n} photo${n !== 1 ? 's' : ''}. Is this still you?`,
+        yes: `Yes, I’m ${uploaderName}`,
+        no: 'No, someone else'
+      });
+      sessionStorage.setItem('welcomed', '1');
+      if (!same) {
+        uploaderName = '';
+        localStorage.removeItem('uploaderName');
+        document.getElementById('name-input').value = '';
+        showNameModal();
+      }
+    }
   }
 
   // Expose functions used in dynamically generated HTML
