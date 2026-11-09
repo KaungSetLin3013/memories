@@ -154,21 +154,36 @@
     overscroll-behavior:contain;
     display:flex;flex-direction:column;
   }
-  .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;flex-shrink:0}
+  /* FEED: one Instagram-style post per photo */
+  .gallery-scroll{padding:0 0 var(--gap-s)}
+  .gallery-grid{display:flex;flex-direction:column;gap:var(--gap-l);flex-shrink:0}
+  .post{background:var(--bg);border-bottom:1px solid var(--border);padding-bottom:var(--gap-m)}
+  .post-head{display:flex;align-items:center;gap:10px;padding:10px var(--gap-m)}
+  .post-avatar{
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--accent);color:var(--on-accent);
+    font-size:15px;font-weight:700;text-transform:uppercase;
+    box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent-dark);
+  }
+  .post-meta{min-width:0;flex:1}
+  .post-user{font-size:15px;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .post-caption{font-size:14px;color:var(--text-muted);line-height:1.3;margin-top:1px;overflow-wrap:anywhere}
+  .post-time{font-size:12px;color:var(--text-muted);flex-shrink:0;align-self:flex-start;padding-top:2px}
   .gallery-item{
-    aspect-ratio:1;display:block;width:100%;
-    background:var(--surface2);
-    border:none;border-radius:8px;padding:0;
+    display:block;width:100%;min-height:280px;
+    background:var(--surface2);border:none;border-radius:0;padding:0;
     overflow:hidden;position:relative;
   }
   .gallery-item img{
-    width:100%;height:100%;object-fit:cover;display:block;
+    width:100%;height:auto;max-height:82dvh;object-fit:cover;display:block;
     opacity:0;transition:opacity 300ms;
   }
   .gallery-item img.in{opacity:1}
-  .gallery-item{transition:transform 400ms cubic-bezier(.34,1.56,.64,1)}
-  .gallery-item:active{transform:scale(.96);transition-duration:80ms}
+  .gallery-item.loaded{min-height:0}
   .gallery-item:focus-visible{outline-offset:-3px}
+  .post-skel .post-head{opacity:.6}
+  .skel-line{height:12px;border-radius:6px;width:40%}
   /* Skeleton: show the shape before the content */
   .skel{
     background:linear-gradient(90deg,#1c1c1f 25%,#2a2a2e 50%,#1c1c1f 75%);
@@ -682,6 +697,7 @@
       <button class="filter-tag active" data-sort="newest">Newest</button>
       <button class="filter-tag" data-sort="oldest">Oldest</button>
       <button class="filter-tag" data-sort="uploader">By name</button>
+      <button class="btn btn-outline" id="download-all-btn-photos" style="min-height:40px;padding:0 var(--gap-m);font-size:14px;margin-left:auto">Download all (.zip)</button>
     </div>
     <div class="tab-scroll" id="admin-photo-list"></div>
   </div>
@@ -714,6 +730,13 @@
           <input class="modal-input" id="limit-input" type="number" min="0" inputmode="numeric" placeholder="e.g. 10">
           <button class="btn btn-save" id="save-limit-btn">Save limit</button>
         </div>
+      </div>
+
+      <div class="admin-section-title">Export</div>
+      <div class="settings-card">
+        <div class="card-title">Download all photos</div>
+        <p>Saves every photo as a .zip, named by uploader and time, with a captions.csv listing who posted what.</p>
+        <button class="btn btn-save btn-block" id="download-all-btn">Download all (.zip)</button>
       </div>
 
       <div class="admin-section-title">Danger zone</div>
@@ -902,8 +925,18 @@ function showScreen(name) {
    GALLERY
    ============================================================ */
 let photos = [];
-function skeletonGrid(n = 12) {
-  return Array.from({ length: n }, () => '<div class="gallery-item skel" aria-hidden="true"></div>').join('');
+function skeletonGrid(n = 3) {
+  return Array.from({ length: n }, () =>
+    '<div class="post post-skel" aria-hidden="true"><div class="post-head"><div class="post-avatar skel" style="box-shadow:none"></div>' +
+    '<div class="post-meta"><div class="skel skel-line"></div></div></div><div class="gallery-item skel"></div></div>').join('');
+}
+function timeAgo(d) {
+  const sec = Math.max(0, (Date.now() - new Date(d)) / 1000);
+  if (sec < 60) return 'now';
+  if (sec < 3600) return Math.floor(sec / 60) + 'm';
+  if (sec < 86400) return Math.floor(sec / 3600) + 'h';
+  if (sec < 604800) return Math.floor(sec / 86400) + 'd';
+  return new Date(d).toLocaleDateString();
 }
 async function loadGallery() {
   const grid = document.getElementById('gallery-grid');
@@ -935,22 +968,52 @@ async function loadGallery() {
   count.textContent = photos.length ? `${photos.length} photo${photos.length !== 1 ? 's' : ''}` : '';
   if (photos.length === 0) { empty.style.display = 'flex'; return; }
   photos.forEach((p, i) => {
+    const name = p.uploader || 'Anonymous';
+    const post = document.createElement('article');
+    post.className = 'post';
+
+    const head = document.createElement('div');
+    head.className = 'post-head';
+    const av = document.createElement('div');
+    av.className = 'post-avatar';
+    av.setAttribute('aria-hidden', 'true');
+    av.textContent = Array.from(name.trim())[0] || '?';
+    const meta = document.createElement('div');
+    meta.className = 'post-meta';
+    const user = document.createElement('div');
+    user.className = 'post-user';
+    user.textContent = name;
+    meta.appendChild(user);
+    if (p.caption) {
+      const cap = document.createElement('div');
+      cap.className = 'post-caption';
+      cap.textContent = p.caption;
+      meta.appendChild(cap);
+    }
+    const time = document.createElement('time');
+    time.className = 'post-time';
+    time.dateTime = p.created_at;
+    time.textContent = timeAgo(p.created_at);
+    head.append(av, meta, time);
+
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'gallery-item skel';
-    el.setAttribute('aria-label', 'Open photo' + (p.uploader ? ' by ' + p.uploader : '') + (p.caption ? ': ' + p.caption : ''));
+    el.setAttribute('aria-label', 'Open photo by ' + name + (p.caption ? ': ' + p.caption : ''));
     el.addEventListener('click', () => openLightbox(i));
     const img = document.createElement('img');
-    img.alt = '';
+    img.alt = p.caption || ('Photo by ' + name);
     img.decoding = 'async';
-    img.loading = 'lazy';
-    const show = () => { img.classList.add('in'); el.classList.remove('skel'); };
+    img.loading = i < 2 ? 'eager' : 'lazy';
+    const show = () => { img.classList.add('in'); el.classList.remove('skel'); el.classList.add('loaded'); };
     img.addEventListener('load', show);
     img.addEventListener('error', show);
     img.src = p.url;
     if (img.complete) show();
     el.appendChild(img);
-    grid.appendChild(el);
+
+    post.append(head, el);
+    grid.appendChild(post);
   });
 }
 
@@ -1165,12 +1228,18 @@ async function loadAdminPhotos(search = '') {
       <input class="cap-input" type="text" value="${esc(p.caption || '')}" placeholder="No caption" aria-label="Caption">
       <div class="row-actions">
         <button class="btn btn-save row-save">Save caption</button>
+        <button class="btn btn-outline row-dl">Download</button>
         <button class="btn btn-danger row-del">Delete photo</button>
       </div>`;
     info.querySelector('.row-save').addEventListener('click', async () => {
       const cap = info.querySelector('.cap-input').value;
       const ok = await updateCaption(p.id, cap);
       if (ok) { p.caption = cap; toast('Saved ✓'); } else toast('Error saving');
+    });
+    info.querySelector('.row-dl').addEventListener('click', async e => {
+      const b = e.currentTarget; b.disabled = true;
+      try { await downloadPhoto(p); } catch { toast('Download failed'); }
+      b.disabled = false;
     });
     info.querySelector('.row-del').addEventListener('click', async () => {
       if (!confirm('Delete this photo?')) return;
@@ -1185,6 +1254,81 @@ async function loadAdminPhotos(search = '') {
     row.appendChild(info);
     list.appendChild(row);
   });
+}
+
+/* ---- DOWNLOADS ---- */
+function photoFileName(p, i = 0) {
+  const d = new Date(p.created_at);
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = isNaN(d) ? 'photo' : `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  const who = (p.uploader || 'anonymous').replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 30) || 'anonymous';
+  const m = (p.url || '').split('?')[0].match(/\.(jpe?g|png|webp|heic)$/i);
+  return `${who}_${stamp}_${i + 1}.${m ? m[1].toLowerCase() : 'jpg'}`;
+}
+async function fetchPhotoBlob(p) {
+  const r = await fetch(p.url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.blob();
+}
+function saveBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+async function downloadPhoto(p) {
+  saveBlob(await fetchPhotoBlob(p), photoFileName(p));
+}
+function loadJSZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => res(window.JSZip);
+    s.onerror = () => rej(new Error('Could not load zip library'));
+    document.head.appendChild(s);
+  });
+}
+let downloadingAll = false;
+async function downloadAllPhotos() {
+  if (downloadingAll) return;
+  const btns = ['download-all-btn', 'download-all-btn-photos'].map(id => document.getElementById(id));
+  const labels = btns.map(b => b.textContent);
+  const setBtns = txt => btns.forEach((b, i) => { b.textContent = txt ?? labels[i]; });
+  downloadingAll = true; btns.forEach(b => b.disabled = true);
+  try {
+    setBtns('Loading…');
+    const all = await loadPhotos();
+    if (!all.length) { toast('No photos to download'); return; }
+    const JSZip = await loadJSZip();
+    const zip = new JSZip();
+    const csv = ['file,uploader,caption,uploaded_at'];
+    let done = 0, failed = 0, next = 0;
+    const worker = async () => {
+      while (next < all.length) {
+        const i = next++, p = all[i];
+        try {
+          const name = photoFileName(p, i);
+          zip.file(name, await fetchPhotoBlob(p));
+          const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+          csv.push([q(name), q(p.uploader), q(p.caption), q(p.created_at)].join(','));
+        } catch (e) { failed++; console.error('Download failed', p.url, e); }
+        setBtns(`Fetching ${++done}/${all.length}…`);
+      }
+    };
+    await Promise.all(Array.from({ length: 4 }, worker));
+    zip.file('captions.csv', '\ufeff' + csv.join('\n'));
+    setBtns('Zipping…');
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' }, m => setBtns(`Zipping ${Math.round(m.percent)}%`));
+    saveBlob(blob, `memories-${new Date().toISOString().slice(0, 10)}.zip`);
+    toast(failed ? `Downloaded ${all.length - failed} photos (${failed} failed)` : `Downloaded ${all.length} photos ✓`);
+  } catch (e) {
+    console.error(e);
+    toast('Download failed — check your connection');
+  } finally {
+    downloadingAll = false; btns.forEach(b => b.disabled = false); setBtns();
+  }
 }
 
 /* ---- DEVICES ---- */
@@ -1693,6 +1837,8 @@ function toast(msg) {
   // Settings tab buttons
   document.getElementById('save-pw-btn').addEventListener('click', updatePassword);
   document.getElementById('save-limit-btn').addEventListener('click', savePhotoLimit);
+  document.getElementById('download-all-btn').addEventListener('click', downloadAllPhotos);
+  document.getElementById('download-all-btn-photos').addEventListener('click', downloadAllPhotos);
 
   // Danger zone
   document.getElementById('delete-all-btn').addEventListener('click', async () => {
