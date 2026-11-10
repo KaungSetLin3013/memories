@@ -77,7 +77,7 @@
   svg.icon,.icon-svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 
   /* SCREENS */
-  .screen{display:none;flex-direction:column;height:100%}
+  .screen{display:none;flex-direction:column;flex:1;min-height:0}
   .screen.active{display:flex}
 
   /* HEADER */
@@ -110,40 +110,52 @@
   .header-btn:active{transform:scale(.92);transition-duration:80ms}
   @media (hover:hover){.header-btn:hover{background:#2d2d31}}
 
-  /* BOTTOM NAV */
+  /* BOTTOM NAV — one shared bar; a round bump rises around the active icon
+     and slides to the next tab with a little wave */
+  @property --nav-x{syntax:'<length>';inherits:true;initial-value:0px}
+  @property --nav-r{syntax:'<length>';inherits:true;initial-value:40px}
   .bottom-nav{
-    display:flex;
-    background:var(--surface);
-    border-top:1px solid var(--border);
-    padding:var(--gap-s) 0 calc(var(--gap-s) + var(--safe-bottom));
-    flex-shrink:0;
+    position:relative;flex-shrink:0;z-index:30;
+    padding-bottom:var(--safe-bottom);
+    transition:--nav-x 560ms cubic-bezier(.3,1.4,.5,1);
   }
+  .bottom-nav.no-anim{transition:none}
+  body.no-nav #main-nav{display:none}
+  .nav-bg{
+    position:absolute;inset:0;background:var(--surface);border-top:1px solid var(--border);
+    /* a round notch is cut out of the bar around the bump */
+    -webkit-mask-image:radial-gradient(circle var(--nav-r) at var(--nav-x) 6px,transparent 98%,#000 100%);
+            mask-image:radial-gradient(circle var(--nav-r) at var(--nav-x) 6px,transparent 98%,#000 100%);
+  }
+  .nav-bump{
+    position:absolute;top:-22px;left:var(--nav-x);width:56px;height:56px;margin-left:-28px;
+    border-radius:50%;background:var(--accent);
+    box-shadow:0 4px 14px rgb(0 0 0 / .35);pointer-events:none;
+  }
+  .bottom-nav.wave{animation:notch-wave 560ms ease-out}
+  .bottom-nav.wave .nav-bump{animation:bump-squash 560ms ease-out}
+  @keyframes bump-squash{
+    0%{transform:scale(1)} 30%{transform:scale(1.2,.82)} 65%{transform:scale(.92,1.1)} 100%{transform:none}
+  }
+  @keyframes notch-wave{
+    0%{--nav-r:40px} 30%{--nav-r:46px} 65%{--nav-r:39px} 100%{--nav-r:40px}
+  }
+  .nav-items{position:relative;display:flex;height:72px}
   .nav-btn{
-    flex:1;min-height:56px;position:relative;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-    border:none;background:none;border-radius:12px;
-    color:var(--text-muted);font-size:13px;font-weight:600;
-    transition:color 200ms;
+    flex:1;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;
+    padding:0 0 10px;border:none;background:none;border-radius:12px;
+    color:var(--text-muted);font-size:11px;font-weight:600;
+    transition:color 200ms,font-size 200ms;
   }
-  /* Press: the icon sinks fast, then springs back with a little overshoot */
-  .nav-btn svg{transition:transform 400ms cubic-bezier(.34,1.56,.64,1)}
-  .nav-btn:active svg{transform:scale(.86);transition-duration:80ms}
-  .nav-btn.active{color:var(--accent)}
-  /* Active tab: the bar grows out from the centre and the icon pops (transform + opacity only) */
-  .nav-btn.active::before{
-    content:'';position:absolute;top:-8px;left:50%;transform:translateX(-50%);
-    width:32px;height:3px;border-radius:2px;background:var(--accent);
-    animation:nav-bar-in 280ms cubic-bezier(.2,.8,.2,1);
-  }
-  .nav-btn.active svg{animation:nav-icon-pop 380ms cubic-bezier(.34,1.56,.64,1)}
-  @keyframes nav-bar-in{
-    from{transform:translateX(-50%) scaleX(0);opacity:0}
-    to{transform:translateX(-50%) scaleX(1);opacity:1}
-  }
-  @keyframes nav-icon-pop{
-    0%{transform:translateY(4px) scale(.8)}
-    60%{transform:translateY(-2px) scale(1.12)}
-    100%{transform:none}
+  /* unselected tabs stay small; the selected icon floats up into the bump */
+  .nav-btn svg{width:20px;height:20px;transition:transform 560ms cubic-bezier(.34,1.56,.64,1),color 200ms}
+  .nav-btn:active:not(.active) svg{transform:scale(.85);transition-duration:80ms}
+  .nav-btn.active{color:var(--accent);font-size:12px}
+  .nav-btn.active svg{transform:translateY(-26px) scale(1.3);color:var(--on-accent)}
+  @media (prefers-reduced-motion:reduce){
+    .bottom-nav,.nav-btn svg{transition:none}
+    .bottom-nav.wave,.bottom-nav.wave .nav-bump{animation:none}
   }
 
   /* GALLERY SCREEN */
@@ -155,7 +167,7 @@
     display:flex;flex-direction:column;
   }
   /* FEED: one Instagram-style post per photo */
-  .gallery-scroll{padding:0 0 var(--gap-s)}
+  .gallery-scroll{padding:0 0 28px}
   .gallery-grid{display:flex;flex-direction:column;gap:var(--gap-l);flex-shrink:0}
   .post{background:var(--bg);border-bottom:1px solid var(--border);padding-bottom:var(--gap-m)}
   .post-head{display:flex;align-items:center;gap:10px;padding:10px var(--gap-m)}
@@ -236,6 +248,18 @@
   }
   .feed-clear{min-height:44px;padding:0 12px;background:none;border:none;color:var(--accent);font-size:14px;font-weight:600;flex-shrink:0}
   .feed-clear[hidden]{display:none}
+  /* admin tag controls */
+  .seg{display:flex;gap:var(--gap-s);flex-wrap:wrap}
+  .seg .filter-tag{flex:1;min-width:140px}
+  .tag-row{display:flex;align-items:center;gap:var(--gap-s);padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .tag-row:last-child{border-bottom:none}
+  .tag-row .name{flex:1;min-width:0;font-weight:600;color:var(--accent);overflow-wrap:anywhere}
+  .tag-row .cnt{color:var(--text-muted);font-size:13px}
+  .tag-row .btn{min-height:44px;padding:0 14px;font-size:14px}
+  .tag-row .modal-input{flex:1;min-width:120px;margin-bottom:0}
+  .preset-add{display:flex;gap:var(--gap-s);margin-top:var(--gap-s)}
+  .preset-add .modal-input{margin-bottom:0;flex:1}
+  .tag-input input[hidden]{display:none}
   /* tag input (upload + edit) */
   .tag-input{margin-bottom:var(--gap-m)}
   .tag-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
@@ -249,7 +273,7 @@
   .tag-suggest:empty{display:none}
   .tag-suggest .sug-label{width:100%;font-size:12px;color:var(--text-muted)}
   /* profile */
-  .profile-scroll{flex:1;overflow-y:auto;padding:0 var(--gap-m) var(--gap-m)}
+  .profile-scroll{flex:1;overflow-y:auto;padding:0 var(--gap-m) 28px}
   .profile-card{
     display:flex;align-items:center;gap:var(--gap-m);flex-wrap:wrap;
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:var(--gap-m);
@@ -308,7 +332,7 @@
   }
   .cam-bottombar{
     position:absolute;bottom:0;left:0;right:0;z-index:5;
-    padding:var(--gap-l) 0 var(--gap-m);
+    padding:var(--gap-l) 0 44px;
     background:linear-gradient(to top,rgb(0 0 0 / .75) 0%,transparent 100%);
   }
   .cam-bottombar-row{display:flex;align-items:center;justify-content:space-between;padding:0 32px}
@@ -464,18 +488,9 @@
 
   /* ADMIN */
   #screen-admin{overflow:hidden}
-  .admin-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
-  .admin-tab{
-    flex:1;min-height:48px;padding:0 4px;background:none;border:none;
-    border-bottom:3px solid transparent;color:var(--text-muted);
-    font-size:14px;font-weight:600;white-space:nowrap;
-    transition:color 150ms,border-color 150ms;
-  }
-  .admin-tab:active{background:rgb(255 255 255 / .06)}
-  .admin-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
   .admin-tab-content{display:none;flex-direction:column;flex:1;overflow:hidden}
   .admin-tab-content.active{display:flex}
-  .tab-scroll{flex:1;overflow-y:auto;padding:var(--gap-m);overscroll-behavior:contain}
+  .tab-scroll{flex:1;overflow-y:auto;padding:var(--gap-m) var(--gap-m) 40px;overscroll-behavior:contain}
   .toolbar{
     display:flex;gap:var(--gap-s);align-items:center;
     padding:var(--gap-s) var(--gap-m);border-bottom:1px solid var(--border);flex-shrink:0;
@@ -746,17 +761,6 @@
       <button class="btn btn-secondary" onclick="loadGallery()">Reload photos</button>
     </div>
   </div>
-  <nav class="bottom-nav" aria-label="Main">
-    <button class="nav-btn active" id="nav-gallery" aria-current="page">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Gallery
-    </button>
-    <button class="nav-btn" id="nav-camera">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
-    </button>
-    <button class="nav-btn" id="nav-profile">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile
-    </button>
-  </nav>
 </div>
 
 <!-- CAMERA SCREEN -->
@@ -843,17 +847,6 @@
     </div>
   </div>
 
-  <nav class="bottom-nav" aria-label="Main">
-    <button class="nav-btn" id="nav-gallery2">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Gallery
-    </button>
-    <button class="nav-btn active" id="nav-camera2" aria-current="page">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
-    </button>
-    <button class="nav-btn" id="nav-profile2">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile
-    </button>
-  </nav>
 </div>
 
 <!-- PROFILE SCREEN -->
@@ -881,17 +874,6 @@
       <button class="btn btn-primary" onclick="showScreen('camera')">Take a photo</button>
     </div>
   </div>
-  <nav class="bottom-nav" aria-label="Main">
-    <button class="nav-btn" id="nav-gallery3">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Gallery
-    </button>
-    <button class="nav-btn" id="nav-camera3">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
-    </button>
-    <button class="nav-btn active" id="nav-profile3" aria-current="page">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile
-    </button>
-  </nav>
 </div>
 
 <!-- ADMIN SCREEN -->
@@ -902,13 +884,6 @@
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
   </header>
-
-  <div class="admin-tabs" role="tablist" aria-label="Admin sections">
-    <button class="admin-tab active" id="tabbtn-overview" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-overview" tabindex="0">Overview</button>
-    <button class="admin-tab" id="tabbtn-photos" data-tab="photos" role="tab" aria-selected="false" aria-controls="tab-photos" tabindex="-1">Photos</button>
-    <button class="admin-tab" id="tabbtn-devices" data-tab="devices" role="tab" aria-selected="false" aria-controls="tab-devices" tabindex="-1">Devices</button>
-    <button class="admin-tab" id="tabbtn-settings" data-tab="settings" role="tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1">Settings</button>
-  </div>
 
   <!-- TAB: OVERVIEW -->
   <div class="admin-tab-content active" id="tab-overview" role="tabpanel" aria-labelledby="tabbtn-overview">
@@ -937,6 +912,32 @@
       <button class="btn btn-outline" id="download-all-btn-photos" style="min-height:40px;padding:0 var(--gap-m);font-size:14px;margin-left:auto">Download all (.zip)</button>
     </div>
     <div class="tab-scroll" id="admin-photo-list"></div>
+  </div>
+
+  <!-- TAB: TAGS -->
+  <div class="admin-tab-content" id="tab-tags" role="tabpanel" aria-labelledby="tabbtn-tags">
+    <div class="tab-scroll">
+      <div class="admin-section-title">Who can create tags</div>
+      <div class="settings-card">
+        <div class="seg" id="tag-mode-btns" role="group" aria-label="Tag creation mode">
+          <button class="filter-tag" data-mode="open" aria-pressed="true">Anyone can create tags</button>
+          <button class="filter-tag" data-mode="preset" aria-pressed="false">Preset tags only</button>
+        </div>
+        <p style="margin-top:var(--gap-s)">In “Preset tags only” mode friends can only pick from the list below.</p>
+      </div>
+
+      <div class="admin-section-title">Preset tags</div>
+      <div class="settings-card">
+        <div class="tag-chips" id="preset-chips"></div>
+        <div class="preset-add">
+          <input class="modal-input" id="preset-input" type="text" maxlength="24" placeholder="Add a preset tag" aria-label="New preset tag" autocapitalize="off" enterkeyhint="done">
+          <button class="btn btn-save" id="preset-add-btn">Add</button>
+        </div>
+      </div>
+
+      <div class="admin-section-title">Tags in use</div>
+      <div class="settings-card" id="tags-in-use"></div>
+    </div>
   </div>
 
   <!-- TAB: DEVICES -->
@@ -989,7 +990,45 @@
       </div>
     </div>
   </div>
+  <nav class="bottom-nav" id="admin-nav" aria-label="Admin sections">
+    <div class="nav-bg" aria-hidden="true"></div>
+    <span class="nav-bump" aria-hidden="true"></span>
+    <div class="nav-items admin-tabs" role="tablist" aria-label="Admin sections">
+      <button class="nav-btn admin-tab active" id="tabbtn-overview" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-overview" tabindex="0">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Overview
+      </button>
+      <button class="nav-btn admin-tab" id="tabbtn-photos" data-tab="photos" role="tab" aria-selected="false" aria-controls="tab-photos" tabindex="-1">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Photos
+      </button>
+      <button class="nav-btn admin-tab" id="tabbtn-tags" data-tab="tags" role="tab" aria-selected="false" aria-controls="tab-tags" tabindex="-1">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>Tags
+      </button>
+      <button class="nav-btn admin-tab" id="tabbtn-devices" data-tab="devices" role="tab" aria-selected="false" aria-controls="tab-devices" tabindex="-1">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>Devices
+      </button>
+      <button class="nav-btn admin-tab" id="tabbtn-settings" data-tab="settings" role="tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg>Settings
+      </button>
+    </div>
+  </nav>
 </div>
+
+<!-- MAIN NAV (shared by Gallery, Camera and Profile) -->
+<nav class="bottom-nav" id="main-nav" aria-label="Main">
+  <div class="nav-bg" aria-hidden="true"></div>
+  <span class="nav-bump" aria-hidden="true"></span>
+  <div class="nav-items">
+    <button class="nav-btn" id="nav-gallery">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Gallery
+    </button>
+    <button class="nav-btn" id="nav-camera">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
+    </button>
+    <button class="nav-btn" id="nav-profile">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile
+    </button>
+  </div>
+</nav>
 
 <script>
 /* ============================================================
@@ -1211,26 +1250,40 @@ async function updateCaption(id, caption) {
    NAVIGATION
    ============================================================ */
 let currentScreen = 'camera';
+const NAV_ORDER = ['gallery', 'camera', 'profile'];
+function moveBump(nav, btn, animate = true) {
+  if (!nav || !btn) return;
+  const x = btn.offsetLeft + btn.offsetWidth / 2;
+  if (!animate) nav.classList.add('no-anim');
+  nav.style.setProperty('--nav-x', x + 'px');
+  nav.classList.remove('wave');
+  void nav.offsetWidth;
+  if (animate) nav.classList.add('wave');
+  else nav.classList.remove('no-anim');
+}
+function positionNav(name, animate = true) {
+  moveBump(document.getElementById('main-nav'), document.getElementById('nav-' + name), animate);
+}
+function positionAdminNav(animate = true) {
+  moveBump(document.getElementById('admin-nav'), document.querySelector('.admin-tab.active'), animate);
+}
 function showScreen(name) {
+  const prevScreen = currentScreen;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
   currentScreen = name;
-  // update nav active states
-  ['nav-gallery','nav-gallery2','nav-gallery3'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { const on = name === 'gallery'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
+  // update nav active states + move the bump
+  NAV_ORDER.forEach(n => {
+    const el = document.getElementById('nav-' + n);
+    const on = name === n;
+    el.classList.toggle('active', on);
+    on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current');
   });
-  ['nav-camera','nav-camera2','nav-camera3'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { const on = name === 'camera'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
-  });
-  ['nav-profile','nav-profile2','nav-profile3'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { const on = name === 'profile'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
-  });
+  document.body.classList.toggle('no-nav', !NAV_ORDER.includes(name));
+  if (NAV_ORDER.includes(name)) positionNav(name, NAV_ORDER.includes(prevScreen) && prevScreen !== name);
   if (name === 'gallery') { loadGallery(); }
-  if (name === 'camera') { startCamera(); updateCamCount(); refreshDeviceCount(); }
-  if (name === 'admin') { loadAdminGrid(); }
+  if (name === 'camera') { startCamera(); updateCamCount(); refreshDeviceCount(); loadTagSettings().then(() => previewTags && previewTags.refresh()); }
+  if (name === 'admin') { delete document.getElementById('admin-nav').dataset.ready; loadAdminGrid(); }
   if (name === 'profile') { loadProfile(); }
 }
 
@@ -1392,6 +1445,29 @@ async function loadGallery() {
   grid.removeAttribute('aria-busy');
   buildFeedTools();
   renderGallery();
+}
+
+/* ---- Tag rules set by the admin ---- */
+let tagSettings = { mode: 'open', presets: [] };
+async function loadTagSettings() {
+  if (!isConfigured()) return tagSettings;
+  try {
+    const r = await sbFetch(`/rest/v1/settings?key=in.(tag_mode,preset_tags)&select=key,value`);
+    if (r.ok) {
+      const m = Object.fromEntries((await r.json()).map(x => [x.key, x.value]));
+      tagSettings = {
+        mode: m.tag_mode === 'preset' ? 'preset' : 'open',
+        presets: [...new Set(String(m.preset_tags || '').split(',').map(normTag).filter(Boolean))]
+      };
+    }
+  } catch {}
+  return tagSettings;
+}
+async function saveSetting(key, value) {
+  let r = await sbFetch(`/rest/v1/settings?key=eq.${key}`, { method: 'PATCH', body: JSON.stringify({ value }) });
+  if (r.ok && (await r.json()).length) return true;
+  r = await sbFetch(`/rest/v1/settings`, { method: 'POST', body: JSON.stringify({ key, value }) });
+  return r.ok;
 }
 
 /* ---- Filters, tags and sorting ---- */
@@ -1820,7 +1896,11 @@ let adminPhotoCache = [], adminDeviceCache = [], adminSortMode = 'newest';
 function switchAdminTab(tabName) {
   document.querySelectorAll('.admin-tab').forEach(t => { const on = t.dataset.tab === tabName; t.classList.toggle('active', on); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
   document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabName));
+  const an = document.getElementById('admin-nav');
+  positionAdminNav(!!an.dataset.ready);
+  an.dataset.ready = '1';
   if (tabName === 'overview')  loadAdminOverview();
+  if (tabName === 'tags')      loadAdminTags();
   if (tabName === 'photos')    loadAdminPhotos();
   if (tabName === 'devices')   loadAdminDevices();
   if (tabName === 'settings')  loadAdminSettings();
@@ -1862,7 +1942,7 @@ async function loadAdminPhotos(search = '') {
   let photos = [...adminPhotoCache];
   if (search) {
     const q = search.toLowerCase();
-    photos = photos.filter(p => (p.uploader||'').toLowerCase().includes(q) || (p.caption||'').toLowerCase().includes(q));
+    photos = photos.filter(p => (p.uploader||'').toLowerCase().includes(q) || (p.caption||'').toLowerCase().includes(q) || photoTags(p).some(t => t.includes(q.replace(/^#/, ''))));
   }
   if (adminSortMode === 'oldest')   photos.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
   if (adminSortMode === 'uploader') photos.sort((a,b) => (a.uploader||'').localeCompare(b.uploader||''));
@@ -1880,15 +1960,21 @@ async function loadAdminPhotos(search = '') {
     info.innerHTML = `
       <div class="meta">${esc(p.uploader || 'Anonymous')} · ${esc(new Date(p.created_at).toLocaleString())}</div>
       <input class="cap-input" type="text" value="${esc(p.caption || '')}" placeholder="No caption" aria-label="Caption">
+      <input class="cap-input tag-edit" type="text" value="${esc(photoTags(p).join(', '))}" placeholder="No tags (separate with commas)" aria-label="Tags" style="margin-top:var(--gap-s)">
       <div class="row-actions">
-        <button class="btn btn-save row-save">Save caption</button>
+        <button class="btn btn-save row-save">Save changes</button>
         <button class="btn btn-outline row-dl">Download</button>
         <button class="btn btn-danger row-del">Delete photo</button>
       </div>`;
     info.querySelector('.row-save').addEventListener('click', async () => {
       const cap = info.querySelector('.cap-input').value;
-      const ok = await updateCaption(p.id, cap);
-      if (ok) { p.caption = cap; toast('Saved ✓'); } else toast('Error saving');
+      const tags = [...new Set(info.querySelector('.tag-edit').value.split(/[\s,]+/).map(normTag).filter(Boolean))].slice(0, 10);
+      const res = await updatePhoto(p.id, { caption: cap, tags });
+      if (res) {
+        p.caption = cap; if (res !== 'no-tags') p.tags = tags;
+        info.querySelector('.tag-edit').value = photoTags(p).join(', ');
+        toast(res === 'no-tags' ? 'Caption saved, but tags need a database update' : 'Saved ✓');
+      } else toast('Error saving');
     });
     info.querySelector('.row-dl').addEventListener('click', async e => {
       const b = e.currentTarget; b.disabled = true;
@@ -1908,6 +1994,100 @@ async function loadAdminPhotos(search = '') {
     row.appendChild(info);
     list.appendChild(row);
   });
+}
+
+/* ---- ADMIN — TAGS ---- */
+async function loadAdminTags() {
+  const box = document.getElementById('tags-in-use');
+  box.innerHTML = '<div style="padding:12px;text-align:center"><div class="spinner"></div></div>';
+  adminPhotoCache = await loadPhotos();
+  await loadTagSettings();
+  renderAdminTags();
+}
+function renderAdminTags() {
+  document.querySelectorAll('#tag-mode-btns [data-mode]').forEach(b => {
+    const on = b.dataset.mode === tagSettings.mode;
+    b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on));
+  });
+  const pc = document.getElementById('preset-chips');
+  pc.innerHTML = '';
+  tagSettings.presets.forEach(t => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tag-chip on'; b.textContent = '#' + t + ' ✕';
+    b.setAttribute('aria-label', 'Remove preset tag ' + t);
+    b.addEventListener('click', () => savePresets(tagSettings.presets.filter(x => x !== t)));
+    pc.appendChild(b);
+  });
+  const box = document.getElementById('tags-in-use');
+  box.innerHTML = '';
+  const counts = allTagCounts(adminPhotoCache);
+  if (!counts.length) { box.innerHTML = '<p style="color:var(--text-muted);font-size:14px">No tags used yet.</p>'; return; }
+  counts.forEach(([t, n]) => {
+    const row = document.createElement('div');
+    row.className = 'tag-row';
+    const showRow = () => {
+      row.innerHTML = `<span class="name"></span><span class="cnt"></span>
+        <button class="btn btn-outline t-rename">Rename</button><button class="btn btn-danger t-del">Delete</button>`;
+      row.querySelector('.name').textContent = '#' + t;
+      row.querySelector('.cnt').textContent = n + ' photo' + (n !== 1 ? 's' : '');
+      row.querySelector('.t-rename').addEventListener('click', showEdit);
+      row.querySelector('.t-del').addEventListener('click', async () => {
+        if (!confirm(`Remove #${t} from ${n} photo${n !== 1 ? 's' : ''}?`)) return;
+        await bulkEditTag(t, null);
+      });
+    };
+    const showEdit = () => {
+      row.innerHTML = `<input class="modal-input" type="text" maxlength="24" aria-label="New name for tag ${esc(t)}" autocapitalize="off">
+        <button class="btn btn-save t-save">Save</button><button class="btn btn-outline t-cancel">Cancel</button>`;
+      const inp = row.querySelector('input'); inp.value = t; inp.focus(); inp.select();
+      const save = async () => {
+        const nt = normTag(inp.value);
+        if (!nt || nt === t) { showRow(); return; }
+        if (counts.some(c => c[0] === nt) && !confirm(`#${nt} already exists. Merge #${t} into it?`)) return;
+        await bulkEditTag(t, nt);
+      };
+      row.querySelector('.t-save').addEventListener('click', save);
+      row.querySelector('.t-cancel').addEventListener('click', showRow);
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') showRow(); });
+    };
+    showRow();
+    box.appendChild(row);
+  });
+}
+async function savePresets(list) {
+  const prev = tagSettings.presets;
+  tagSettings.presets = list;
+  renderAdminTags();
+  if (!(await saveSetting('preset_tags', list.join(',')))) {
+    tagSettings.presets = prev; renderAdminTags();
+    toast('Couldn’t save — check the settings table');
+  }
+}
+async function setTagMode(mode) {
+  const prev = tagSettings.mode;
+  tagSettings.mode = mode;
+  renderAdminTags();
+  if (await saveSetting('tag_mode', mode)) toast(mode === 'preset' ? 'Friends can only pick preset tags' : 'Friends can create their own tags');
+  else { tagSettings.mode = prev; renderAdminTags(); toast('Couldn’t save — check the settings table'); }
+}
+// Rename (newTag given, merges if it exists) or delete (newTag null) a tag on every photo that has it
+async function bulkEditTag(oldTag, newTag) {
+  const affected = adminPhotoCache.filter(p => photoTags(p).includes(oldTag));
+  let failed = 0;
+  for (const p of affected) {
+    const next = [...new Set(photoTags(p).map(t => t === oldTag ? newTag : t).filter(Boolean))];
+    const res = await updatePhoto(p.id, { tags: next });
+    if (res === true) {
+      p.tags = next;
+      const g = photos.find(x => x.id === p.id); if (g) g.tags = next;
+    } else failed++;
+  }
+  if (tagSettings.presets.includes(oldTag)) {
+    const np = [...new Set(tagSettings.presets.map(t => t === oldTag ? newTag : t).filter(Boolean))];
+    await savePresets(np);
+  }
+  renderAdminTags();
+  toast(failed ? `${failed} photo${failed !== 1 ? 's' : ''} couldn’t be updated` : (newTag ? `Renamed to #${newTag} ✓` : `Removed #${oldTag} ✓`));
 }
 
 /* ---- DOWNLOADS ---- */
@@ -2502,10 +2682,16 @@ function createTagInput(root) {
       b.addEventListener('click', () => { tags = tags.filter(x => x !== t); render(); });
       chipsEl.appendChild(b);
     });
+    const presetOnly = tagSettings.mode === 'preset';
+    input.hidden = presetOnly;
     sugEl.innerHTML = '';
-    const sug = allTagCounts(photos).map(x => x[0]).filter(t => !tags.includes(t)).slice(0, 8);
-    if (sug.length && tags.length < MAX_TAGS) {
-      const lab = document.createElement('span'); lab.className = 'sug-label'; lab.textContent = 'Tags friends already use';
+    const pool = presetOnly ? tagSettings.presets : [...new Set([...tagSettings.presets, ...allTagCounts(photos).map(x => x[0])])];
+    const sug = pool.filter(t => !tags.includes(t)).slice(0, presetOnly ? 20 : 8);
+    if (presetOnly && !tagSettings.presets.length) {
+      const lab = document.createElement('span'); lab.className = 'sug-label'; lab.textContent = 'No tags are available yet';
+      sugEl.appendChild(lab);
+    } else if (sug.length && tags.length < MAX_TAGS) {
+      const lab = document.createElement('span'); lab.className = 'sug-label'; lab.textContent = presetOnly ? 'Pick a tag' : 'Suggested tags';
       sugEl.appendChild(lab);
       sug.forEach(t => {
         const b = document.createElement('button');
@@ -2518,6 +2704,7 @@ function createTagInput(root) {
   const add = raw => {
     const t = normTag(raw);
     if (!t || tags.includes(t)) return;
+    if (tagSettings.mode === 'preset' && !tagSettings.presets.includes(t)) { toast('Pick a tag from the list'); return; }
     if (tags.length >= MAX_TAGS) { toast(`Up to ${MAX_TAGS} tags per photo`); return; }
     tags.push(t); render();
   };
@@ -2530,7 +2717,8 @@ function createTagInput(root) {
   input.addEventListener('blur', commit);
   return {
     get() { commit(); return tags.slice(); },
-    set(a) { tags = (a || []).slice(0, MAX_TAGS); input.value = ''; render(); }
+    set(a) { tags = (a || []).slice(0, MAX_TAGS); input.value = ''; render(); },
+    refresh: render
   };
 }
 let previewTags = null, editTags = null;
@@ -2682,14 +2870,12 @@ function toast(msg) {
    ============================================================ */
 (async () => {
   // Nav
-  document.getElementById('nav-gallery').addEventListener('click', () => showScreen('gallery'));
-  document.getElementById('nav-camera').addEventListener('click',  () => showScreen('camera'));
-  document.getElementById('nav-gallery2').addEventListener('click', () => showScreen('gallery'));
-  document.getElementById('nav-gallery3').addEventListener('click', () => showScreen('gallery'));
-  document.getElementById('nav-camera3').addEventListener('click', () => showScreen('camera'));
-  document.getElementById('nav-profile').addEventListener('click', () => showScreen('profile'));
-  document.getElementById('nav-profile2').addEventListener('click', () => showScreen('profile'));
-  document.getElementById('nav-profile3').addEventListener('click', () => showScreen('profile'));
+  NAV_ORDER.forEach(n => document.getElementById('nav-' + n).addEventListener('click', () => showScreen(n)));
+  positionNav(currentScreen, false);
+  document.getElementById('nav-camera').classList.add('active');
+  document.getElementById('nav-camera').setAttribute('aria-current', 'page');
+  window.addEventListener('resize', () => { positionNav(currentScreen, false); if (currentScreen === 'admin') positionAdminNav(false); });
+  window.addEventListener('load', () => positionNav(currentScreen, false));
 
   // Gallery header
   document.getElementById('refresh-btn').addEventListener('click', loadGallery);
@@ -2700,6 +2886,7 @@ function toast(msg) {
   initGrid();
   initFeedTools();
   initProfile();
+  loadTagSettings().then(() => { previewTags && previewTags.refresh(); editTags && editTags.refresh(); });
   document.getElementById('timer-btn').addEventListener('click', cycleTimer);
   document.getElementById('ratio-btn').addEventListener('click', cycleRatio);
   document.getElementById('shutter-btn').addEventListener('click', takePhoto);
@@ -2714,6 +2901,18 @@ function toast(msg) {
   document.getElementById('preview-upload-btn').addEventListener('click', submitPreview);
   document.getElementById('preview-retake-btn').addEventListener('click', retakePhoto);
   document.getElementById('preview-caption').addEventListener('keydown', e => { if (e.key === 'Enter') submitPreview(); });
+
+  // Admin tag controls
+  document.querySelectorAll('#tag-mode-btns [data-mode]').forEach(b => b.addEventListener('click', () => setTagMode(b.dataset.mode)));
+  const addPreset = () => {
+    const inp = document.getElementById('preset-input');
+    const t = normTag(inp.value);
+    if (!t) return;
+    inp.value = '';
+    if (!tagSettings.presets.includes(t)) savePresets([...tagSettings.presets, t]);
+  };
+  document.getElementById('preset-add-btn').addEventListener('click', addPreset);
+  document.getElementById('preset-input').addEventListener('keydown', e => { if (e.key === 'Enter') addPreset(); });
 
   // Admin close
   document.getElementById('admin-close-btn').addEventListener('click', () => showScreen('gallery'));
@@ -2807,12 +3006,6 @@ function toast(msg) {
       }
     }
   }
-
-  // Expose functions used in dynamically generated HTML
-  window.deleteDevice      = deleteDevice;
-  window.resetDeviceCount  = resetDeviceCount;
-  window.saveCaption       = saveCaption;
-  window.confirmDelete     = confirmDelete;
 })();
 
 </script>
