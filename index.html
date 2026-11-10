@@ -402,129 +402,6 @@
   /* BUTTONS: 48px tall, 17px semibold, verb + object, pill radius */
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:10px;
-    min-height:48px;padding:0 var(--gap-l);border-radi-skel .post-head{opacity:.6}
-  .skel-line{height:12px;border-radius:6px;width:40%}
-  /* Skeleton: show the shape before the content */
-  .skel{
-    background:linear-gradient(90deg,#1c1c1f 25%,#2a2a2e 50%,#1c1c1f 75%);
-    background-size:200% 100%;
-    animation:shimmer 1.2s linear infinite;
-  }
-  @keyframes shimmer{to{background-position:-200% 0}}
-  .gallery-empty{
-    flex:1;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:var(--gap-m);
-    padding:var(--gap-l);text-align:center;color:var(--text-muted);
-  }
-  .gallery-empty .big-icon{width:48px;height:48px;opacity:.5}
-  .gallery-empty h2{font-size:20px;font-weight:600;color:var(--text)}
-  .gallery-empty p{font-size:15px;max-width:28ch}
-
-  /* CAMERA SCREEN */
-  #screen-camera{background:#000;position:relative;overflow:hidden}
-  #camera-view{touch-action:none}
-  .cam-topbar{
-    position:absolute;top:0;left:0;right:0;z-index:5;
-    padding:calc(var(--gap-m) + var(--safe-top)) var(--gap-m) var(--gap-m);
-    display:flex;justify-content:space-between;align-items:center;
-    background:linear-gradient(to bottom,rgb(0 0 0 / .65) 0%,transparent 100%);
-  }
-  .cam-bottombar{
-    position:absolute;bottom:0;left:0;right:0;z-index:5;
-    padding:var(--gap-l) 0 var(--gap-m);
-    background:linear-gradient(to top,rgb(0 0 0 / .75) 0%,transparent 100%);
-  }
-  .cam-bottombar-row{display:flex;align-items:center;justify-content:space-between;padding:0 32px}
-  .cam-btn{
-    width:48px;height:48px;min-width:48px;
-    background:rgb(0 0 0 / .45);
-    border:1px solid rgb(255 255 255 / .35);border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    color:#fff;font-size:14px;font-weight:700;
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-    transition:transform 400ms cubic-bezier(.34,1.56,.64,1),background-color 100ms;
-  }
-  .cam-btn:active{transform:scale(.92);transition-duration:80ms}
-  .cam-count{
-    display:flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;
-    background:rgb(0 0 0 / .45);border:1px solid rgb(255 255 255 / .35);border-radius:100px;
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-    color:#fff;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;
-  }
-  .cam-count svg{width:16px;height:16px}
-  /* Composition grid overlays */
-  #grid-svg{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;filter:drop-shadow(0 0 1px rgb(0 0 0 / .7))}
-  #grid-svg .g{stroke:rgb(255 255 255 / .7);stroke-width:1.25;fill:none}
-  #grid-svg .f{stroke:rgb(255 255 255 / .45);stroke-width:1;stroke-dasharray:5 5;fill:none}
-  #grid-svg .a{stroke:var(--accent);stroke-width:2.25;fill:none;stroke-linecap:round}
-  .grid-menu{
-    position:absolute;left:var(--gap-m);top:calc(var(--safe-top) + 84px);z-index:7;
-    width:min(310px,calc(100% - 32px));max-height:calc(100% - 330px);overflow-y:auto;
-    background:rgb(24 24 26 / .94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    border:1px solid var(--border-strong);border-radius:16px;padding:6px;
-  }
-  .grid-menu[hidden]{display:none}
-  .grid-opt{
-    display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;
-    min-height:48px;padding:8px 12px;background:none;border:none;border-radius:10px;
-    text-align:left;color:#fff;
-  }
-  .grid-opt .t{font-size:15px;font-weight:600}
-  .grid-opt .d{font-size:12px;color:var(--text-muted)}
-  .grid-opt[aria-checked="true"]{background:rgb(200 240 87 / .14)}
-  .grid-opt[aria-checked="true"] .t{color:var(--accent)}
-  @media (hover:hover){.grid-opt:hover{background:rgb(255 255 255 / .08)}}
-  .grid-label{
-    position:absolute;left:50%;top:calc(var(--safe-top) + 90px);transform:translateX(-50%);z-index:6;
-    background:rgb(0 0 0 / .6);color:#fff;font-size:13px;font-weight:700;
-    padding:6px 14px;border-radius:100px;pointer-events:none;
-    opacity:0;transition:opacity 200ms;white-space:nowrap;
-  }
-  .grid-label.show{opacity:1}
-  .cam-count.full{color:var(--danger);border-color:var(--danger)}
-  .modal-card .btn-row{display:flex;flex-direction:column;gap:var(--gap-s)}
-  .modal-card .btn-row .btn-secondary{margin-top:0}
-  #ratio-btn{color:var(--accent);border-color:var(--accent);font-size:13px}
-  .shutter-btn{
-    width:72px;height:72px;border-radius:50%;
-    border:4px solid #fff;background:transparent;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .shutter-btn{transition:transform 400ms cubic-bezier(.34,1.56,.64,1)}
-  .shutter-btn:active{transform:scale(.95);transition-duration:80ms}
-  .shutter-inner{width:56px;height:56px;background:#fff;border-radius:50%;transition:transform 400ms cubic-bezier(.34,1.56,.64,1)}
-  .shutter-btn:active .shutter-inner{transform:scale(.86);transition-duration:80ms}
-  .zoom-wrap{
-    position:absolute;bottom:170px;left:0;right:0;z-index:5;
-    display:flex;flex-direction:column;align-items:center;gap:10px;
-  }
-  .zoom-pills{
-    display:flex;gap:4px;padding:4px;border-radius:100px;
-    background:rgb(0 0 0 / .5);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  }
-  .zoom-pill{
-    min-width:48px;min-height:48px;padding:0 12px;
-    background:transparent;border:none;border-radius:100px;
-    color:rgb(255 255 255 / .85);font-size:14px;font-weight:600;white-space:nowrap;
-    transition:transform 400ms cubic-bezier(.34,1.56,.64,1),background-color 100ms,color 100ms;
-  }
-  .zoom-pill:active{transform:scale(.93);transition-duration:80ms}
-  .zoom-pill.active{background:rgb(255 255 255 / .28);color:var(--accent)}
-  .camera-error{
-    display:none;position:absolute;inset:0;z-index:4;
-    background:rgb(0 0 0 / .88);
-    flex-direction:column;align-items:center;justify-content:center;
-    gap:var(--gap-m);padding:var(--gap-l);text-align:center;
-  }
-  .camera-error.show{display:flex}
-  .camera-error h2{font-size:20px;font-weight:600}
-  .camera-error p{color:var(--text-muted);font-size:15px;max-width:30ch}
-  .camera-error-actions{display:flex;flex-direction:column;gap:var(--gap-s);width:100%;max-width:280px}
-
-  /* BUTTONS: 48px tall, 17px semibold, verb + object, pill radius */
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:10px;
     min-height:48px;padding:0 var(--gap-l);border-radius:24px;
     font-size:17px;font-weight:600;line-height:1.1;text-align:center;
     border:1px solid transparent;
@@ -753,6 +630,12 @@
     <div class="preview-body">
       <label class="field-label" for="preview-caption">Caption <span class="optional">(optional)</span></label>
       <input class="modal-input" id="preview-caption" type="text" placeholder="Say something about this moment" maxlength="120" enterkeyhint="done">
+      <label class="field-label" for="preview-tag-input">Tags <span class="optional">(optional, up to 5)</span></label>
+      <div class="tag-input" id="preview-tags">
+        <div class="tag-chips"></div>
+        <input class="modal-input" id="preview-tag-input" type="text" placeholder="Type a tag, press Enter" maxlength="24" enterkeyhint="done" autocapitalize="off" autocomplete="off" style="margin-bottom:0">
+        <div class="tag-suggest"></div>
+      </div>
       <button class="btn btn-primary" id="preview-upload-btn">Upload photo</button>
       <button class="btn btn-secondary" id="preview-retake-btn">Retake photo</button>
     </div>
@@ -763,10 +646,30 @@
 <div class="modal-overlay" id="name-modal" role="dialog" aria-modal="true" aria-labelledby="name-title" data-focus="#name-input">
   <div class="modal-card">
     <h2 id="name-title">Who’s uploading?</h2>
-    <p>Add your name so everyone knows who took the shot.</p>
+    <p id="name-text">Add your name so everyone knows who took the shot.</p>
     <label class="field-label" for="name-input">Your name</label>
     <input class="modal-input" id="name-input" type="text" placeholder="e.g. Alex" maxlength="40" autocomplete="name" enterkeyhint="done">
     <button class="btn btn-primary" onclick="saveName()">Save my name</button>
+    <button class="btn btn-secondary" id="name-cancel" hidden>Cancel</button>
+  </div>
+</div>
+
+<!-- EDIT PHOTO MODAL (profile) -->
+<div class="modal-overlay" id="edit-modal" role="dialog" aria-modal="true" aria-label="Edit photo" data-focus="#edit-caption">
+  <div class="modal-card preview-card">
+    <img id="edit-img" alt="">
+    <div class="preview-body">
+      <label class="field-label" for="edit-caption">Description</label>
+      <input class="modal-input" id="edit-caption" type="text" placeholder="Say something about this moment" maxlength="120" enterkeyhint="done">
+      <label class="field-label" for="edit-tag-input">Tags <span class="optional">(up to 5)</span></label>
+      <div class="tag-input" id="edit-tags">
+        <div class="tag-chips"></div>
+        <input class="modal-input" id="edit-tag-input" type="text" placeholder="Type a tag, press Enter" maxlength="24" enterkeyhint="done" autocapitalize="off" autocomplete="off" style="margin-bottom:0">
+        <div class="tag-suggest"></div>
+      </div>
+      <button class="btn btn-primary" id="edit-save-btn">Save changes</button>
+      <button class="btn btn-secondary" id="edit-cancel-btn">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -815,6 +718,15 @@
     </div>
   </header>
   <div class="pull-hint"><span>↓ Pull down 5 seconds for admin panel</span></div>
+  <div class="feed-tools" id="feed-tools" hidden>
+    <div class="tag-filter" id="tag-filter" role="group" aria-label="Filter by tag"></div>
+    <div class="feed-selects">
+      <select class="feed-select" id="sort-select" aria-label="Sort posts"></select>
+      <select class="feed-select" id="person-select" aria-label="Filter by person"></select>
+      <select class="feed-select" id="day-select" aria-label="Filter by day"></select>
+      <button class="feed-clear" id="clear-filters" hidden>Clear</button>
+    </div>
+  </div>
   <div class="gallery-scroll" id="gallery-scroll">
     <div class="gallery-grid" id="gallery-grid"></div>
     <div class="gallery-empty" id="gallery-empty" style="display:none">
@@ -822,6 +734,11 @@
       <h2>No photos yet</h2>
       <p>Snap the first one and it will show up here for everyone.</p>
       <button class="btn btn-primary" onclick="showScreen('camera')">Take a photo</button>
+    </div>
+    <div class="gallery-empty" id="gallery-nomatch" style="display:none">
+      <h2>Nothing matches</h2>
+      <p>No photos fit these filters.</p>
+      <button class="btn btn-secondary" id="nomatch-clear">Clear filters</button>
     </div>
     <div class="gallery-empty" id="gallery-error" style="display:none" role="alert">
       <h2>Couldn’t load photos</h2>
@@ -835,6 +752,9 @@
     </button>
     <button class="nav-btn" id="nav-camera">
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
+    </button>
+    <button class="nav-btn" id="nav-profile">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile
     </button>
   </nav>
 </div>
@@ -929,6 +849,47 @@
     </button>
     <button class="nav-btn active" id="nav-camera2" aria-current="page">
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
+    </button>
+    <button class="nav-btn" id="nav-profile2">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile
+    </button>
+  </nav>
+</div>
+
+<!-- PROFILE SCREEN -->
+<div class="screen" id="screen-profile">
+  <header class="header header-tight">
+    <div class="header-main">
+      <h1 aria-label="My profile">My <span class="accent">profile</span></h1>
+      <p class="header-sub" id="profile-sub"></p>
+    </div>
+  </header>
+  <div class="profile-scroll" id="profile-scroll">
+    <section class="profile-card">
+      <div class="profile-avatar" id="profile-avatar" aria-hidden="true">?</div>
+      <div class="profile-id">
+        <h2 id="profile-name"></h2>
+        <p id="profile-stats"></p>
+      </div>
+      <button class="btn btn-outline" id="profile-rename-btn" style="min-height:44px;font-size:15px">Change name</button>
+    </section>
+    <h2 class="profile-section">My photos</h2>
+    <div id="profile-list"></div>
+    <div class="gallery-empty" id="profile-empty" style="display:none">
+      <h2>No photos yet</h2>
+      <p>Photos you upload will show up here. You can edit, download or delete them.</p>
+      <button class="btn btn-primary" onclick="showScreen('camera')">Take a photo</button>
+    </div>
+  </div>
+  <nav class="bottom-nav" aria-label="Main">
+    <button class="nav-btn" id="nav-gallery3">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Gallery
+    </button>
+    <button class="nav-btn" id="nav-camera3">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Camera
+    </button>
+    <button class="nav-btn active" id="nav-profile3" aria-current="page">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile
     </button>
   </nav>
 </div>
@@ -1062,11 +1023,13 @@ async function sbFetch(path, options = {}) {
     }
   });
 }
+const photoTags = p => Array.isArray(p.tags) ? p.tags : [];
+const normPhoto = p => ({ ...p, tags: photoTags(p) });
 async function loadPhotos() {
   if (!isConfigured()) return [];
   const r = await sbFetch(`/rest/v1/${TABLE_NAME}?select=*&order=created_at.desc`);
   if (!r.ok) return [];
-  return r.json();
+  return (await r.json()).map(normPhoto);
 }
 async function loadAdminPassword() {
   if (!isConfigured()) return 'admin123';
@@ -1190,7 +1153,7 @@ async function loadDevices() {
   if (!r.ok) return [];
   return r.json();
 }
-async function uploadPhoto(blob, filename, caption) {
+async function uploadPhoto(blob, filename, caption, tags = []) {
   const { url, key } = getConfig();
   const path = `${Date.now()}_${filename}`;
   const uploadRes = await fetch(`${url}/storage/v1/object/${BUCKET_NAME}/${path}`, {
@@ -1204,10 +1167,14 @@ async function uploadPhoto(blob, filename, caption) {
     throw new Error('Upload failed: ' + err);
   }
   const publicUrl = `${url}/storage/v1/object/public/${BUCKET_NAME}/${path}`;
-  const metaRes = await sbFetch(`/rest/v1/${TABLE_NAME}`, {
-    method: 'POST',
-    body: JSON.stringify({ url: publicUrl, uploader: uploaderName || 'Anonymous', caption: caption || '', device_id: DEVICE_ID })
-  });
+  const row = { url: publicUrl, uploader: uploaderName || 'Anonymous', caption: caption || '', device_id: DEVICE_ID };
+  const post = body => sbFetch(`/rest/v1/${TABLE_NAME}`, { method: 'POST', body: JSON.stringify(body) });
+  let metaRes = await post(tags.length ? { ...row, tags } : row);
+  if (!metaRes.ok && tags.length) {
+    // The "tags" column may not exist yet — save the photo without tags rather than losing it
+    metaRes = await post(row);
+    if (metaRes.ok) toast('Photo saved, but tags need a database update');
+  }
   if (!metaRes.ok) throw new Error('DB insert failed');
   return metaRes.json();
 }
@@ -1221,6 +1188,16 @@ async function deletePhoto(id, storageUrl) {
     });
   }
   await sbFetch(`/rest/v1/${TABLE_NAME}?id=eq.${id}`, { method: 'DELETE' });
+}
+async function updatePhoto(id, fields) {
+  const patch = body => sbFetch(`/rest/v1/${TABLE_NAME}?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+  let r = await patch(fields);
+  if (!r.ok && 'tags' in fields) {
+    const { tags, ...rest } = fields;
+    r = await patch(rest);
+    return r.ok ? 'no-tags' : false;
+  }
+  return r.ok;
 }
 async function updateCaption(id, caption) {
   const r = await sbFetch(`/rest/v1/${TABLE_NAME}?id=eq.${id}`, {
@@ -1239,17 +1216,22 @@ function showScreen(name) {
   document.getElementById('screen-' + name).classList.add('active');
   currentScreen = name;
   // update nav active states
-  ['nav-gallery','nav-gallery2'].forEach(id => {
+  ['nav-gallery','nav-gallery2','nav-gallery3'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { const on = name === 'gallery'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
   });
-  ['nav-camera','nav-camera2'].forEach(id => {
+  ['nav-camera','nav-camera2','nav-camera3'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { const on = name === 'camera'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
+  });
+  ['nav-profile','nav-profile2','nav-profile3'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { const on = name === 'profile'; el.classList.toggle('active', on); on ? el.setAttribute('aria-current', 'page') : el.removeAttribute('aria-current'); }
   });
   if (name === 'gallery') { loadGallery(); }
   if (name === 'camera') { startCamera(); updateCamCount(); refreshDeviceCount(); }
   if (name === 'admin') { loadAdminGrid(); }
+  if (name === 'profile') { loadProfile(); }
 }
 
 /* ============================================================
@@ -1270,7 +1252,7 @@ function timeAgo(d) {
   return new Date(d).toLocaleDateString();
 }
 function buildPost(items) {
-  // items: [{p, i}] oldest -> newest; i = index in the global `photos` array (for the lightbox)
+  // items: [{p, i}] oldest -> newest; i = index in lbList (for the lightbox)
   const n = items.length;
   const latest = items[n - 1].p;
   const name = latest.uploader || 'Anonymous';
@@ -1291,7 +1273,9 @@ function buildPost(items) {
   user.textContent = name;
   const cap = document.createElement('div');
   cap.className = 'post-caption';
-  meta.append(user, cap);
+  const tagsEl = document.createElement('div');
+  tagsEl.className = 'post-tags';
+  meta.append(user, cap, tagsEl);
   const time = document.createElement('time');
   time.className = 'post-time';
   head.append(av, meta, time);
@@ -1361,6 +1345,14 @@ function buildPost(items) {
     const p = items[k].p;
     cap.textContent = p.caption || '';
     cap.style.display = p.caption ? '' : 'none';
+    tagsEl.innerHTML = '';
+    photoTags(p).forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'post-tag'; b.textContent = '#' + t;
+      b.setAttribute('aria-label', 'Filter by tag ' + t);
+      b.addEventListener('click', () => toggleTagFilter(t));
+      tagsEl.appendChild(b);
+    });
     time.dateTime = p.created_at;
     time.textContent = timeAgo(p.created_at);
     if (counter) counter.textContent = `${k + 1}/${n}`;
@@ -1398,36 +1390,303 @@ async function loadGallery() {
     return;
   }
   grid.removeAttribute('aria-busy');
-  grid.innerHTML = '';
-  count.textContent = photos.length ? `${photos.length} photo${photos.length !== 1 ? 's' : ''}` : '';
-  if (photos.length === 0) { empty.style.display = 'flex'; return; }
-  // One post per device (or per name when there is no device id); newest activity first
-  const groups = new Map();
-  photos.forEach((p, i) => {
-    const key = p.device_id || ('u:' + (p.uploader || 'Anonymous'));
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push({ p, i });
+  buildFeedTools();
+  renderGallery();
+}
+
+/* ---- Filters, tags and sorting ---- */
+const galleryState = { tags: new Set(), sort: 'newest', person: 'all', day: 'all' };
+let shuffleOrder = null;
+const SORTS = [
+  ['newest', 'Newest first'], ['oldest', 'Oldest first'],
+  ['name-az', 'Name A → Z'], ['name-za', 'Name Z → A'],
+  ['most', 'Most photos'], ['shuffle', 'Shuffle']
+];
+const groupKey = p => p.device_id || ('u:' + (p.uploader || 'Anonymous'));
+const dayKey = d => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+function normTag(t) {
+  return String(t || '').toLowerCase().replace(/^#+/, '').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 24);
+}
+function allTagCounts(list) {
+  const m = new Map();
+  list.forEach(p => photoTags(p).forEach(t => m.set(t, (m.get(t) || 0) + 1)));
+  return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+function fillSelect(sel, options, value) {
+  sel.innerHTML = '';
+  options.forEach(([v, label]) => { const o = document.createElement('option'); o.value = v; o.textContent = label; sel.appendChild(o); });
+  sel.value = options.some(o => o[0] === value) ? value : options[0][0];
+  return sel.value;
+}
+function buildFeedTools() {
+  // people
+  const people = new Map();
+  [...photos].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).forEach(p => {
+    const k = groupKey(p), cur = people.get(k) || { name: '', n: 0 };
+    people.set(k, { name: p.uploader || 'Anonymous', n: cur.n + 1 });
   });
-  groups.forEach(items => grid.appendChild(buildPost(items.slice().reverse())));
-  count.textContent = `${photos.length} photo${photos.length !== 1 ? 's' : ''} · ${groups.size} ${groups.size !== 1 ? 'people' : 'person'}`;
+  const personOpts = [['all', 'Everyone'], ['me', 'My photos'],
+    ...[...people.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([k, v]) => [k, `${v.name} (${v.n})`])];
+  galleryState.person = fillSelect(document.getElementById('person-select'), personOpts, galleryState.person);
+  // days
+  const days = [...new Set(photos.map(p => dayKey(p.created_at)))].sort().reverse();
+  const dayOpts = [['all', 'Any day'], ...days.map(d => {
+    const [y, m, dd] = d.split('-').map(Number);
+    return [d, new Date(y, m - 1, dd).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })];
+  })];
+  galleryState.day = fillSelect(document.getElementById('day-select'), dayOpts, galleryState.day);
+  galleryState.sort = fillSelect(document.getElementById('sort-select'), SORTS, galleryState.sort);
+  // drop selected tags that no longer exist
+  const existing = new Set(allTagCounts(photos).map(t => t[0]));
+  [...galleryState.tags].forEach(t => { if (!existing.has(t)) galleryState.tags.delete(t); });
+  syncFilterUI();
+}
+function syncFilterUI() {
+  const box = document.getElementById('tag-filter');
+  box.innerHTML = '';
+  const counts = allTagCounts(photos);
+  if (counts.length) {
+    const all = document.createElement('button');
+    all.type = 'button'; all.className = 'filter-tag tag-pill' + (galleryState.tags.size ? '' : ' active');
+    all.textContent = 'All tags'; all.setAttribute('aria-pressed', String(!galleryState.tags.size));
+    all.addEventListener('click', () => { galleryState.tags.clear(); onFilterChange(); });
+    box.appendChild(all);
+    counts.forEach(([t, n]) => {
+      const b = document.createElement('button');
+      const on = galleryState.tags.has(t);
+      b.type = 'button'; b.className = 'filter-tag tag-pill' + (on ? ' active' : '');
+      b.setAttribute('aria-pressed', String(on));
+      b.innerHTML = '<span class="t"></span><span class="n"></span>';
+      b.querySelector('.t').textContent = '#' + t;
+      b.querySelector('.n').textContent = n;
+      b.addEventListener('click', () => toggleTagFilter(t));
+      box.appendChild(b);
+    });
+  }
+  document.getElementById('clear-filters').hidden = !filtersActive();
+}
+const filtersActive = () => galleryState.tags.size > 0 || galleryState.person !== 'all' || galleryState.day !== 'all';
+function toggleTagFilter(t) {
+  galleryState.tags.has(t) ? galleryState.tags.delete(t) : galleryState.tags.add(t);
+  onFilterChange();
+}
+function clearFilters() {
+  galleryState.tags.clear(); galleryState.person = 'all'; galleryState.day = 'all';
+  document.getElementById('person-select').value = 'all';
+  document.getElementById('day-select').value = 'all';
+  onFilterChange();
+}
+function onFilterChange() {
+  syncFilterUI();
+  renderGallery();
+  document.getElementById('gallery-scroll').scrollTop = 0;
+}
+function visiblePhotos() {
+  const g = galleryState;
+  return photos.filter(p =>
+    (g.person === 'all' || (g.person === 'me' ? p.device_id === DEVICE_ID : groupKey(p) === g.person)) &&
+    (g.day === 'all' || dayKey(p.created_at) === g.day) &&
+    (!g.tags.size || photoTags(p).some(t => g.tags.has(t)))
+  );
+}
+function initFeedTools() {
+  document.getElementById('sort-select').addEventListener('change', e => {
+    galleryState.sort = e.target.value;
+    if (galleryState.sort === 'shuffle') shuffleOrder = new Map();
+    onFilterChange();
+  });
+  document.getElementById('person-select').addEventListener('change', e => { galleryState.person = e.target.value; onFilterChange(); });
+  document.getElementById('day-select').addEventListener('change', e => { galleryState.day = e.target.value; onFilterChange(); });
+  document.getElementById('clear-filters').addEventListener('click', clearFilters);
+  document.getElementById('nomatch-clear').addEventListener('click', clearFilters);
+}
+function renderGallery() {
+  const grid = document.getElementById('gallery-grid');
+  const empty = document.getElementById('gallery-empty');
+  const nomatch = document.getElementById('gallery-nomatch');
+  const count = document.getElementById('gallery-count');
+  const tools = document.getElementById('feed-tools');
+  grid.innerHTML = '';
+  empty.style.display = 'none'; nomatch.style.display = 'none';
+  lbList = [];
+  if (!photos.length) { tools.hidden = true; count.textContent = ''; empty.style.display = 'flex'; return; }
+  tools.hidden = false;
+  const vis = visiblePhotos();
+  if (!vis.length) { count.textContent = `0 of ${photos.length} photos`; nomatch.style.display = 'flex'; return; }
+  // One post per device (or per name when there is no device id)
+  const groups = new Map();
+  vis.forEach(p => { const k = groupKey(p); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); });
+  const list = [...groups.entries()].map(([key, arr]) => {
+    arr.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const last = arr[arr.length - 1];
+    return { key, arr, latest: +new Date(last.created_at), name: last.uploader || 'Anonymous' };
+  });
+  if (!shuffleOrder) shuffleOrder = new Map();
+  const rnd = k => { if (!shuffleOrder.has(k)) shuffleOrder.set(k, Math.random()); return shuffleOrder.get(k); };
+  const cmp = {
+    newest: (a, b) => b.latest - a.latest,
+    oldest: (a, b) => a.latest - b.latest,
+    'name-az': (a, b) => a.name.localeCompare(b.name) || b.latest - a.latest,
+    'name-za': (a, b) => b.name.localeCompare(a.name) || b.latest - a.latest,
+    most: (a, b) => b.arr.length - a.arr.length || b.latest - a.latest,
+    shuffle: (a, b) => rnd(a.key) - rnd(b.key)
+  }[galleryState.sort] || ((a, b) => b.latest - a.latest);
+  list.sort(cmp);
+  list.forEach(g => {
+    const items = g.arr.map(p => { lbList.push(p); return { p, i: lbList.length - 1 }; });
+    grid.appendChild(buildPost(items));
+  });
+  count.textContent = vis.length === photos.length
+    ? `${photos.length} photo${photos.length !== 1 ? 's' : ''} · ${groups.size} ${groups.size !== 1 ? 'people' : 'person'}`
+    : `${vis.length} of ${photos.length} photos`;
+}
+
+/* ============================================================
+   PROFILE — your own photos: edit, delete, download
+   ============================================================ */
+let myPhotos = [];
+const isMine = p => p && p.device_id === DEVICE_ID;
+async function loadProfile() {
+  renderProfileHeader();
+  const list = document.getElementById('profile-list');
+  if (!isConfigured()) { myPhotos = []; renderProfile(); return; }
+  list.setAttribute('aria-busy', 'true');
+  try {
+    const r = await sbFetch(`/rest/v1/${TABLE_NAME}?device_id=eq.${encodeURIComponent(DEVICE_ID)}&select=*&order=created_at.desc`);
+    myPhotos = r.ok ? (await r.json()).map(normPhoto) : [];
+  } catch { myPhotos = []; toast('Couldn’t load your photos'); }
+  list.removeAttribute('aria-busy');
+  renderProfile();
+}
+function renderProfileHeader() {
+  const name = uploaderName || 'Guest';
+  document.getElementById('profile-avatar').textContent = Array.from(name.trim())[0] || '?';
+  document.getElementById('profile-name').textContent = name;
+  const n = myPhotos.length;
+  const limitTxt = PHOTO_LIMIT > 0 ? ` · ${devicePhotoCount}/${PHOTO_LIMIT} used` : '';
+  document.getElementById('profile-stats').textContent = `${n} photo${n !== 1 ? 's' : ''}${limitTxt}`;
+  document.getElementById('profile-sub').textContent = 'Only you can edit, download or delete these';
+}
+function renderProfile() {
+  renderProfileHeader();
+  const list = document.getElementById('profile-list');
+  const empty = document.getElementById('profile-empty');
+  list.innerHTML = '';
+  empty.style.display = myPhotos.length ? 'none' : 'flex';
+  myPhotos.forEach((p, idx) => {
+    const card = document.createElement('article');
+    card.className = 'my-card';
+    const top = document.createElement('div'); top.className = 'my-top';
+    const thumb = document.createElement('button');
+    thumb.type = 'button'; thumb.className = 'my-thumb'; thumb.setAttribute('aria-label', 'View photo');
+    const img = document.createElement('img'); img.src = p.url; img.alt = p.caption || 'Your photo'; img.loading = 'lazy'; img.decoding = 'async';
+    thumb.appendChild(img);
+    thumb.addEventListener('click', () => openLightbox(idx, myPhotos));
+    const info = document.createElement('div'); info.className = 'my-info';
+    const nm = document.createElement('div'); nm.className = 'my-name'; nm.textContent = p.uploader || uploaderName || 'Anonymous';
+    const cap = document.createElement('div'); cap.className = 'my-caption' + (p.caption ? '' : ' none');
+    cap.textContent = p.caption || 'No description';
+    info.append(nm, cap);
+    if (photoTags(p).length) {
+      const tg = document.createElement('div'); tg.className = 'my-tags';
+      tg.textContent = photoTags(p).map(t => '#' + t).join(' ');
+      info.appendChild(tg);
+    }
+    const tm = document.createElement('div'); tm.className = 'my-time';
+    tm.textContent = new Date(p.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    info.appendChild(tm);
+    top.append(thumb, info);
+
+    const actions = document.createElement('div'); actions.className = 'my-actions';
+    const mk = (cls, label) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = label; return b; };
+    const edit = mk('btn-outline', 'Edit'), dl = mk('btn-outline', 'Download'), del = mk('btn-danger', 'Delete');
+    edit.addEventListener('click', () => openEdit(p));
+    dl.addEventListener('click', async () => {
+      if (!isMine(p)) return;
+      dl.disabled = true;
+      try { await downloadPhoto(p); } catch { toast('Download failed'); }
+      dl.disabled = false;
+    });
+    del.addEventListener('click', () => deleteMine(p));
+    actions.append(edit, dl, del);
+    card.append(top, actions);
+    list.appendChild(card);
+  });
+}
+let editingPhoto = null;
+function openEdit(p) {
+  if (!isMine(p)) return;
+  editingPhoto = p;
+  document.getElementById('edit-img').src = p.url;
+  document.getElementById('edit-caption').value = p.caption || '';
+  editTags.set(photoTags(p));
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEdit() { document.getElementById('edit-modal').classList.remove('open'); editingPhoto = null; }
+async function saveEdit() {
+  const p = editingPhoto;
+  if (!p || !isMine(p)) return;
+  const btn = document.getElementById('edit-save-btn');
+  const caption = document.getElementById('edit-caption').value.trim();
+  const tags = editTags.get();
+  btn.disabled = true; btn.classList.add('is-loading'); btn.textContent = 'Saving…';
+  const res = await updatePhoto(p.id, { caption, tags });
+  btn.disabled = false; btn.classList.remove('is-loading'); btn.textContent = 'Save changes';
+  if (!res) { toast('Couldn’t save — try again'); return; }
+  p.caption = caption;
+  if (res !== 'no-tags') p.tags = tags;
+  const g = photos.find(x => x.id === p.id); if (g) { g.caption = caption; if (res !== 'no-tags') g.tags = tags; }
+  closeEdit();
+  renderProfile();
+  toast(res === 'no-tags' ? 'Description saved, but tags need a database update' : 'Saved ✓');
+}
+async function deleteMine(p) {
+  if (!isMine(p)) return;
+  const yes = await askConfirm({
+    title: 'Delete this photo?',
+    text: 'It will be removed for everyone. This can’t be undone.',
+    yes: 'Delete photo', no: 'Keep it'
+  });
+  if (!yes) return;
+  try {
+    await deletePhoto(p.id, p.url);
+    myPhotos = myPhotos.filter(x => x.id !== p.id);
+    photos = photos.filter(x => x.id !== p.id);
+    renderProfile();
+    toast('Photo deleted');
+  } catch { toast('Couldn’t delete — try again'); }
+}
+function initProfile() {
+  previewTags = createTagInput(document.getElementById('preview-tags'));
+  editTags = createTagInput(document.getElementById('edit-tags'));
+  document.getElementById('profile-rename-btn').addEventListener('click', openRename);
+  document.getElementById('name-cancel').addEventListener('click', () => {
+    setNameModalMode(false);
+    document.getElementById('name-modal').classList.remove('open');
+  });
+  document.getElementById('edit-save-btn').addEventListener('click', saveEdit);
+  document.getElementById('edit-cancel-btn').addEventListener('click', closeEdit);
+  document.getElementById('edit-caption').addEventListener('keydown', e => { if (e.key === 'Enter') saveEdit(); });
 }
 
 /* ============================================================
    LIGHTBOX
    ============================================================ */
-let lightboxIndex = -1, lightboxOpener = null;
+let lightboxIndex = -1, lightboxOpener = null, lbList = [];
 function renderLightbox() {
-  const p = photos[lightboxIndex];
+  const p = lbList[lightboxIndex];
   if (!p) return;
   const img = document.getElementById('lightbox-img');
   img.src = p.url;
   img.alt = p.caption || ('Photo by ' + (p.uploader || 'a guest'));
   document.getElementById('lightbox-caption').textContent =
-    (p.caption ? p.caption + ' · ' : '') + (p.uploader || '') + ' · ' + new Date(p.created_at).toLocaleDateString();
+    (p.caption ? p.caption + ' · ' : '') + (p.uploader || '') + ' · ' + new Date(p.created_at).toLocaleDateString() +
+    (photoTags(p).length ? ' · ' + photoTags(p).map(t => '#' + t).join(' ') : '');
   document.getElementById('lightbox-prev').style.visibility = lightboxIndex > 0 ? 'visible' : 'hidden';
-  document.getElementById('lightbox-next').style.visibility = lightboxIndex < photos.length - 1 ? 'visible' : 'hidden';
+  document.getElementById('lightbox-next').style.visibility = lightboxIndex < lbList.length - 1 ? 'visible' : 'hidden';
 }
-function openLightbox(i) {
+function openLightbox(i, list) {
+  if (list) lbList = list;
   lightboxIndex = i;
   lightboxOpener = document.activeElement;
   renderLightbox();
@@ -1436,7 +1695,7 @@ function openLightbox(i) {
 }
 function stepLightbox(d) {
   const n = lightboxIndex + d;
-  if (n < 0 || n >= photos.length) return;
+  if (n < 0 || n >= lbList.length) return;
   lightboxIndex = n;
   renderLightbox();
 }
@@ -2221,9 +2480,60 @@ function captureFrame() {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     document.getElementById('preview-img').src = dataUrl;
     document.getElementById('preview-caption').value = '';
+    if (previewTags) previewTags.set([]);
     document.getElementById('preview-modal').classList.add('open');
   }, 'image/jpeg', 0.92);
 }
+
+/* ---- Tag input (used when uploading and when editing) ---- */
+const MAX_TAGS = 5;
+function createTagInput(root) {
+  const chipsEl = root.querySelector('.tag-chips');
+  const input = root.querySelector('input');
+  const sugEl = root.querySelector('.tag-suggest');
+  let tags = [];
+  const render = () => {
+    chipsEl.innerHTML = '';
+    tags.forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tag-chip on';
+      b.textContent = '#' + t + ' ✕';
+      b.setAttribute('aria-label', 'Remove tag ' + t);
+      b.addEventListener('click', () => { tags = tags.filter(x => x !== t); render(); });
+      chipsEl.appendChild(b);
+    });
+    sugEl.innerHTML = '';
+    const sug = allTagCounts(photos).map(x => x[0]).filter(t => !tags.includes(t)).slice(0, 8);
+    if (sug.length && tags.length < MAX_TAGS) {
+      const lab = document.createElement('span'); lab.className = 'sug-label'; lab.textContent = 'Tags friends already use';
+      sugEl.appendChild(lab);
+      sug.forEach(t => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'tag-chip'; b.textContent = '#' + t;
+        b.addEventListener('click', () => add(t));
+        sugEl.appendChild(b);
+      });
+    }
+  };
+  const add = raw => {
+    const t = normTag(raw);
+    if (!t || tags.includes(t)) return;
+    if (tags.length >= MAX_TAGS) { toast(`Up to ${MAX_TAGS} tags per photo`); return; }
+    tags.push(t); render();
+  };
+  const commit = () => { input.value.split(/[\s,]+/).forEach(add); input.value = ''; };
+  input.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ',' || e.key === ' ') && input.value.trim()) { e.preventDefault(); e.stopPropagation(); commit(); }
+    else if (e.key === 'Backspace' && !input.value && tags.length) { tags.pop(); render(); }
+  });
+  input.addEventListener('input', () => { if (/[,\s]$/.test(input.value)) commit(); });
+  input.addEventListener('blur', commit);
+  return {
+    get() { commit(); return tags.slice(); },
+    set(a) { tags = (a || []).slice(0, MAX_TAGS); input.value = ''; render(); }
+  };
+}
+let previewTags = null, editTags = null;
 
 let pendingBlob = null;
 async function submitPreview() {
@@ -2231,8 +2541,9 @@ async function submitPreview() {
   const btn = document.getElementById('preview-upload-btn');
   btn.textContent = 'Uploading…'; btn.disabled = true; btn.classList.add('is-loading');
   const caption = document.getElementById('preview-caption').value.trim();
+  const tags = previewTags ? previewTags.get() : [];
   try {
-    await doUpload(pendingBlob, 'photo.jpg', caption);
+    await doUpload(pendingBlob, 'photo.jpg', caption, tags);
     document.getElementById('preview-modal').classList.remove('open');
     pendingBlob = null;
   } catch(e) {
@@ -2261,7 +2572,7 @@ document.getElementById('camera-view').addEventListener('touchmove',e=>{
 },{passive:true});
 window.addEventListener('resize', updateCropBox);
 
-async function doUpload(blob, filename, caption) {
+async function doUpload(blob, filename, caption, tags = []) {
   if (PHOTO_LIMIT === null) PHOTO_LIMIT = await loadPhotoLimit();
   if (PHOTO_LIMIT > 0 && devicePhotoCount >= PHOTO_LIMIT) {
     toast(`Limit reached — max ${PHOTO_LIMIT} photo${PHOTO_LIMIT !== 1 ? 's' : ''} per device`);
@@ -2270,7 +2581,7 @@ async function doUpload(blob, filename, caption) {
   setProgress(10);
   try {
     setProgress(40);
-    await uploadPhoto(blob, filename, caption);
+    await uploadPhoto(blob, filename, caption, tags);
     await incrementDeviceCount();
     updateCamCount();
     setProgress(100);
@@ -2289,10 +2600,41 @@ function setProgress(pct) {
 /* ============================================================
    NAME MODAL
    ============================================================ */
-function showNameModal() { document.getElementById('name-modal').classList.add('open'); }
+let renaming = false;
+function setNameModalMode(rename) {
+  renaming = rename;
+  document.getElementById('name-title').textContent = rename ? 'Change your name' : 'Who’s uploading?';
+  document.getElementById('name-text').textContent = rename
+    ? 'This updates your name on all of your photos.'
+    : 'Add your name so everyone knows who took the shot.';
+  document.getElementById('name-cancel').hidden = !rename;
+}
+function showNameModal() { setNameModalMode(false); document.getElementById('name-modal').classList.add('open'); }
+function openRename() {
+  setNameModalMode(true);
+  document.getElementById('name-input').value = uploaderName || '';
+  document.getElementById('name-modal').classList.add('open');
+}
 async function saveName() {
   const v = document.getElementById('name-input').value.trim();
   if (!v) { toast('Enter your name'); return; }
+  if (renaming) {
+    setNameModalMode(false);
+    document.getElementById('name-modal').classList.remove('open');
+    uploaderName = v;
+    localStorage.setItem('uploaderName', v);
+    try {
+      await Promise.all([
+        sbFetch(`/rest/v1/devices?device_id=eq.${encodeURIComponent(DEVICE_ID)}`, { method: 'PATCH', body: JSON.stringify({ name: v }) }),
+        sbFetch(`/rest/v1/${TABLE_NAME}?device_id=eq.${encodeURIComponent(DEVICE_ID)}`, { method: 'PATCH', body: JSON.stringify({ uploader: v }) })
+      ]);
+      photos.forEach(p => { if (p.device_id === DEVICE_ID) p.uploader = v; });
+      myPhotos.forEach(p => { p.uploader = v; });
+      toast('Name updated ✓');
+    } catch { toast('Couldn’t update your name — try again'); }
+    renderProfile();
+    return;
+  }
   uploaderName = v;
   localStorage.setItem('uploaderName', v);
   document.getElementById('name-modal').classList.remove('open');
@@ -2343,6 +2685,11 @@ function toast(msg) {
   document.getElementById('nav-gallery').addEventListener('click', () => showScreen('gallery'));
   document.getElementById('nav-camera').addEventListener('click',  () => showScreen('camera'));
   document.getElementById('nav-gallery2').addEventListener('click', () => showScreen('gallery'));
+  document.getElementById('nav-gallery3').addEventListener('click', () => showScreen('gallery'));
+  document.getElementById('nav-camera3').addEventListener('click', () => showScreen('camera'));
+  document.getElementById('nav-profile').addEventListener('click', () => showScreen('profile'));
+  document.getElementById('nav-profile2').addEventListener('click', () => showScreen('profile'));
+  document.getElementById('nav-profile3').addEventListener('click', () => showScreen('profile'));
 
   // Gallery header
   document.getElementById('refresh-btn').addEventListener('click', loadGallery);
@@ -2351,6 +2698,8 @@ function toast(msg) {
   // Camera controls
   document.getElementById('grid-btn').addEventListener('click', toggleGrid);
   initGrid();
+  initFeedTools();
+  initProfile();
   document.getElementById('timer-btn').addEventListener('click', cycleTimer);
   document.getElementById('ratio-btn').addEventListener('click', cycleRatio);
   document.getElementById('shutter-btn').addEventListener('click', takePhoto);
