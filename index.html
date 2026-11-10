@@ -250,7 +250,7 @@
   .feed-clear[hidden]{display:none}
   /* admin tag controls */
   .seg{display:flex;gap:var(--gap-s);flex-wrap:wrap}
-  .seg .filter-tag{flex:1;min-width:140px}
+  .seg .filter-tag{flex:1 1 150px;flex-shrink:1;white-space:normal;line-height:1.2;padding:8px 12px}
   .tag-row{display:flex;align-items:center;gap:var(--gap-s);padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
   .tag-row:last-child{border-bottom:none}
   .tag-row .name{flex:1;min-width:0;font-weight:600;color:var(--accent);overflow-wrap:anywhere}
@@ -579,7 +579,7 @@
 
   /* TOAST */
   #toast{
-    position:fixed;bottom:calc(88px + var(--safe-bottom));
+    position:fixed;bottom:calc(108px + var(--safe-bottom));
     left:50%;transform:translateX(-50%) translateY(16px);
     max-width:calc(100% - 32px);text-align:center;
     background:var(--surface2);border:1px solid var(--border-strong);
