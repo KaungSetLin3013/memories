@@ -557,8 +557,9 @@
     font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     background:linear-gradient(to top,rgb(0 0 0 / .75),transparent);
   }
+  .agrid-badge svg{width:11px;height:11px}
   .agrid-badge{
-    position:absolute;top:4px;right:4px;min-width:20px;height:20px;padding:0 6px;border-radius:100px;
+    position:absolute;top:4px;right:4px;min-width:20px;height:20px;padding:0 7px 0 5px;border-radius:100px;gap:3px;
     background:var(--accent);color:var(--on-accent);font-size:11px;font-weight:700;
     display:flex;align-items:center;justify-content:center;
   }
@@ -759,7 +760,6 @@
         <button type="button" class="btn btn-outline" id="aedit-dl" aria-label="Download photo" title="Download photo"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg></button>
         <button type="button" class="btn btn-danger" id="aedit-del" aria-label="Delete photo" title="Delete photo"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
       </div>
-      <button class="btn btn-secondary" id="aedit-close" style="margin-top:var(--gap-s)">Close</button>
     </div>
   </div>
 </div>
@@ -983,7 +983,7 @@
       <button class="btn btn-outline" id="download-all-btn-photos" style="min-height:40px;padding:0 var(--gap-m);font-size:14px;margin-left:auto">Download all (.zip)</button>
     </div>
     <div class="tab-scroll" id="admin-photo-list"></div>
-    <p class="admin-hint" style="padding:0 var(--gap-m) var(--gap-s);font-size:13px;color:var(--text-muted)">Tap a photo to edit its caption and tags.</p>
+    <p class="admin-hint" style="padding:0 var(--gap-m) var(--gap-s);font-size:13px;color:var(--text-muted)">Tap a photo to edit its caption and tags. The tag badge shows how many tags a photo has.</p>
   </div>
 
   <!-- TAB: TAGS -->
@@ -2099,6 +2099,14 @@ async function loadAdminOverview() {
 }
 
 /* ---- PHOTOS ---- */
+function tagBadge(n) {
+  const bd = document.createElement('span');
+  bd.className = 'agrid-badge';
+  bd.title = n + ' tag' + (n !== 1 ? 's' : '');
+  bd.setAttribute('aria-hidden', 'true');
+  bd.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>' + n;
+  return bd;
+}
 async function loadAdminPhotos(search = '') {
   const list = document.getElementById('admin-photo-list');
   list.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner"></div></div>';
@@ -2123,8 +2131,7 @@ async function loadAdminPhotos(search = '') {
     const nm = document.createElement('span'); nm.className = 'agrid-name'; nm.textContent = p.uploader || 'Anonymous';
     tile.append(img, nm);
     if (photoTags(p).length) {
-      const bd = document.createElement('span'); bd.className = 'agrid-badge'; bd.textContent = '#' + photoTags(p).length;
-      bd.setAttribute('aria-hidden', 'true'); tile.appendChild(bd);
+      tile.appendChild(tagBadge(photoTags(p).length));
     }
     tile.addEventListener('click', () => openAdminEdit(p, tile));
     grid.appendChild(tile);
@@ -2179,8 +2186,7 @@ async function saveAdminEdit() {
   if (aeditTile) {
     aeditTile.querySelector('.agrid-badge')?.remove();
     if (photoTags(p).length) {
-      const bd = document.createElement('span'); bd.className = 'agrid-badge'; bd.textContent = '#' + photoTags(p).length;
-      bd.setAttribute('aria-hidden', 'true'); aeditTile.appendChild(bd);
+      aeditTile.appendChild(tagBadge(photoTags(p).length));
     }
   }
   toast(res === 'no-tags' ? 'Caption saved, but tags need a database update' : 'Saved ✓');
@@ -2200,7 +2206,10 @@ async function deleteAdminEdit() {
 function initAdminEdit() {
   document.getElementById('aedit-save').addEventListener('click', saveAdminEdit);
   document.getElementById('aedit-del').addEventListener('click', deleteAdminEdit);
-  document.getElementById('aedit-close').addEventListener('click', closeAdminEdit);
+  // tap outside the photo card (on the dark backdrop) to leave the editor
+  document.getElementById('aedit-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeAdminEdit();
+  });
   document.getElementById('aedit-dl').addEventListener('click', async e => {
     const b = e.currentTarget; if (!aeditPhoto) return; b.disabled = true;
     try { await downloadPhoto(aeditPhoto); } catch { toast('Download failed'); }
