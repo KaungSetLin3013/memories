@@ -545,6 +545,16 @@
   .row-actions{display:flex;gap:var(--gap-s)}
   .row-actions .btn{flex:1;min-height:48px;padding:0;display:flex;align-items:center;justify-content:center}
   .row-actions .btn svg{width:22px;height:22px}
+  /* private access */
+  body.locked > *:not(#admin-modal):not(script):not(style){display:none !important}
+  body.locked{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  .inv-link .modal-input{margin-bottom:var(--gap-s);font-size:13px}
+  .inv-result{margin-top:var(--gap-m)}
+  .inv-result p{font-size:13px;color:var(--text-muted);margin:var(--gap-s) 0 0}
+  .inv-list{margin-top:var(--gap-m)}
+  .inv-list .tag-row .cnt{flex-basis:100%}
+  .sql{white-space:pre-wrap;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;overflow-x:auto;margin:var(--gap-s) 0}
+  details.setup summary{min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--accent);cursor:pointer}
   /* admin photo grid + popup editor */
   .admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
   .agrid-tile{
@@ -556,12 +566,6 @@
     position:absolute;left:0;right:0;bottom:0;padding:14px 6px 4px;text-align:left;
     font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     background:linear-gradient(to top,rgb(0 0 0 / .75),transparent);
-  }
-  .agrid-badge svg{width:11px;height:11px}
-  .agrid-badge{
-    position:absolute;top:4px;right:4px;min-width:20px;height:20px;padding:0 7px 0 5px;border-radius:100px;gap:3px;
-    background:var(--accent);color:var(--on-accent);font-size:11px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
   }
   #aedit-modal .modal-card{max-width:420px;max-height:92dvh;display:flex;flex-direction:column}
   #aedit-modal .preview-card img{max-height:38dvh}
@@ -764,6 +768,17 @@
   </div>
 </div>
 
+<!-- ADMIN: EDIT A USER'S TAG ACCESS -->
+<div class="modal-overlay" id="uaccess-modal" role="dialog" aria-modal="true" aria-labelledby="uaccess-title" data-focus="#uaccess-save">
+  <div class="modal-card">
+    <h2 id="uaccess-title">Tag access</h2>
+    <p>This person can see every photo under the tags you choose, and nothing else.</p>
+    <div class="apr-tags" id="uaccess-tags" role="group" aria-label="Tags this person can see" style="margin-bottom:var(--gap-m)"></div>
+    <button class="btn btn-primary" id="uaccess-save">Save access</button>
+    <button class="btn btn-secondary" id="uaccess-cancel">Cancel</button>
+  </div>
+</div>
+
 <!-- ADMIN AUTH MODAL -->
 <div class="modal-overlay" id="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-title" data-focus="#admin-pw-input">
   <div class="modal-card">
@@ -927,6 +942,13 @@
       </div>
       <button class="btn btn-outline" id="profile-rename-btn" style="min-height:44px;font-size:15px">Change name</button>
     </section>
+    <div id="profile-invite-wrap" hidden>
+      <h2 class="profile-section">Invite friends</h2>
+      <div class="settings-card">
+        <p>Pick one of your tags and share the link. Anyone who opens it can see every photo under that tag.</p>
+        <div id="invite-panel-user"></div>
+      </div>
+    </div>
     <h2 class="profile-section">My photos</h2>
     <div id="profile-list"></div>
     <div class="gallery-empty" id="profile-empty" style="display:none">
@@ -967,6 +989,9 @@
 
       <div class="admin-section-title">Highlights</div>
       <div class="settings-card" id="highlights"></div>
+
+      <div class="admin-section-title">Private access</div>
+      <div class="settings-card" id="access-card"></div>
     </div>
   </div>
 
@@ -983,7 +1008,7 @@
       <button class="btn btn-outline" id="download-all-btn-photos" style="min-height:40px;padding:0 var(--gap-m);font-size:14px;margin-left:auto">Download all (.zip)</button>
     </div>
     <div class="tab-scroll" id="admin-photo-list"></div>
-    <p class="admin-hint" style="padding:0 var(--gap-m) var(--gap-s);font-size:13px;color:var(--text-muted)">Tap a photo to edit its caption and tags. The tag badge shows how many tags a photo has.</p>
+    <p class="admin-hint" style="padding:0 var(--gap-m) var(--gap-s);font-size:13px;color:var(--text-muted)">Tap a photo to edit its caption and tags.</p>
   </div>
 
   <!-- TAB: TAGS -->
@@ -996,6 +1021,12 @@
           <button class="filter-tag" data-mode="preset" aria-pressed="false">Preset tags only</button>
         </div>
         <p style="margin-top:var(--gap-s)">In “Preset tags only” mode friends can only pick from the list below.</p>
+      </div>
+
+      <div class="admin-section-title">Invite links</div>
+      <div class="settings-card">
+        <p>Pick one tag and share the link. Anyone who opens it can see every photo under that tag, and nothing else.</p>
+        <div id="invite-panel-admin"></div>
       </div>
 
       <div class="admin-section-title">Preset tags</div>
@@ -1138,7 +1169,14 @@ const photoTags = p => Array.isArray(p.tags) ? p.tags : [];
 const normPhoto = p => ({ ...p, tags: photoTags(p) });
 async function loadPhotos() {
   if (!isConfigured()) return [];
-  const r = await sbFetch(`/rest/v1/${TABLE_NAME}?select=*&order=created_at.desc`);
+  // Friends only get photos under the tags they were invited to (plus their own uploads); the admin sees everything
+  let q = 'select=*&order=created_at.desc';
+  if (!isAdminSession()) {
+    q += access.tags.length
+      ? `&or=(device_id.eq.${DEVICE_ID},tags.ov.{${access.tags.join(',')}})`
+      : `&device_id=eq.${encodeURIComponent(DEVICE_ID)}`;
+  }
+  const r = await sbFetch(`/rest/v1/${TABLE_NAME}?${q}`);
   if (!r.ok) return [];
   return (await r.json()).map(normPhoto);
 }
@@ -1340,6 +1378,7 @@ function positionAdminNav(animate = true) {
   moveBump(document.getElementById('admin-nav'), document.querySelector('.admin-tab.active'), animate);
 }
 function showScreen(name) {
+  if (accessLocked && name !== 'admin') return;
   const prevScreen = currentScreen;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
@@ -1519,6 +1558,242 @@ async function loadGallery() {
   renderGallery();
 }
 
+/* ============================================================
+   PRIVATE ACCESS — people only see photos under the tags they were invited to
+   ============================================================ */
+let access = { tags: [] }, accessLocked = false;
+const isAdminSession = () => sessionStorage.getItem('adminSession') === '1';
+async function loadAccess() {
+  access.tags = [];
+  if (!isConfigured()) return;
+  try {
+    const r = await sbFetch(`/rest/v1/devices?device_id=eq.${encodeURIComponent(DEVICE_ID)}&select=allowed_tags`);
+    if (r.ok) { const rows = await r.json(); access.tags = [...new Set((rows[0] && rows[0].allowed_tags || []).map(normTag).filter(Boolean))]; }
+  } catch {}
+}
+async function redeemInvite(code) {
+  try {
+    const r = await sbFetch(`/rest/v1/invites?code=eq.${encodeURIComponent(code)}&select=*`);
+    const inv = r.ok ? (await r.json())[0] : null;
+    if (!inv) return false;
+    const tag = normTag(inv.tag);
+    const d = await sbFetch(`/rest/v1/devices?device_id=eq.${encodeURIComponent(DEVICE_ID)}&select=*`);
+    const row = d.ok ? (await d.json())[0] : null;
+    if (row) {
+      const next = [...new Set([...(row.allowed_tags || []), tag])];
+      await sbFetch(`/rest/v1/devices?device_id=eq.${encodeURIComponent(DEVICE_ID)}`, { method: 'PATCH', body: JSON.stringify({ allowed_tags: next }) });
+    } else {
+      await sbFetch('/rest/v1/devices', { method: 'POST', body: JSON.stringify({ device_id: DEVICE_ID, name: uploaderName || 'Guest', photo_count: 0, allowed_tags: [tag] }) });
+    }
+    sbFetch(`/rest/v1/invites?code=eq.${encodeURIComponent(code)}`, { method: 'PATCH', body: JSON.stringify({ uses: (inv.uses || 0) + 1 }) }).catch(() => {});
+    return true;
+  } catch { return false; }
+}
+async function initAccess() {
+  const code = new URLSearchParams(location.search).get('invite');
+  if (code && isConfigured()) {
+    await redeemInvite(code.trim());
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch {}
+  }
+  await loadAccess();
+  accessLocked = isConfigured() && !isAdminSession() && access.tags.length === 0;
+}
+// Opened from the main page without an invite: show nothing at all. Five quick taps still lead the admin to the password box.
+function lockApp() {
+  document.body.classList.add('locked');
+  let taps = 0, timer = null;
+  document.addEventListener('click', () => {
+    if (!document.body.classList.contains('locked')) return;
+    taps++; clearTimeout(timer); timer = setTimeout(() => { taps = 0; }, 2500);
+    if (taps >= 5) { taps = 0; triggerAdminPanel(); }
+  });
+}
+async function grantTags(tags) {
+  const fresh = tags.filter(t => !access.tags.includes(t));
+  if (!fresh.length || isAdminSession()) return;
+  const next = [...new Set([...access.tags, ...fresh])];
+  try {
+    const r = await sbFetch(`/rest/v1/devices?device_id=eq.${encodeURIComponent(DEVICE_ID)}`, { method: 'PATCH', body: JSON.stringify({ allowed_tags: next }) });
+    if (r.ok) access.tags = next;
+  } catch {}
+}
+
+/* ---- Invite links (used by the admin and by friends) ---- */
+function makeInviteCode() {
+  const abc = 'abcdefghjkmnpqrstuvwxyz23456789', a = new Uint8Array(12);
+  crypto.getRandomValues(a);
+  return Array.from(a, n => abc[n % abc.length]).join('');
+}
+const inviteUrl = code => `${location.origin}${location.pathname}?invite=${code}`;
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); toast('Link copied ✓'); }
+  catch { window.prompt('Copy this link', t); }
+}
+async function shareInvite(url, tag) {
+  if (navigator.share) { try { await navigator.share({ title: 'Join our trip photos', text: `You’re invited to see the photos tagged #${tag}`, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  copyText(url);
+}
+function createInvitePanel(root, { getTags, createdBy, scopeToMine, allowNew }) {
+  root.innerHTML = `<div class="tag-chips inv-chips" role="group" aria-label="Choose one tag to share"></div>
+    <button type="button" class="btn btn-save inv-create" style="width:100%">Create invite link</button>
+    <div class="inv-result"></div><div class="inv-list"></div>`;
+  const chipsEl = root.querySelector('.inv-chips'), result = root.querySelector('.inv-result'), listEl = root.querySelector('.inv-list');
+  let selected = '';
+  const drawChips = () => {
+    chipsEl.innerHTML = '';
+    const tags = getTags();
+    if (!tags.length && !allowNew) { chipsEl.innerHTML = '<span class="sug-label">No tags to share yet</span>'; return; }
+    tags.forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tag-chip' + (t === selected ? ' on' : ''); b.textContent = '#' + t;
+      b.setAttribute('aria-pressed', String(t === selected));
+      b.addEventListener('click', () => { selected = selected === t ? '' : t; drawChips(); });
+      chipsEl.appendChild(b);
+    });
+    if (allowNew) {
+      const inp = document.createElement('input');
+      inp.className = 'tag-new'; inp.type = 'text'; inp.maxLength = 24; inp.placeholder = '+ new tag'; inp.autocapitalize = 'off';
+      inp.setAttribute('aria-label', 'Type a tag to share');
+      inp.style.cssText = 'min-height:40px;width:120px;background:var(--surface2);border:1px dashed var(--border-strong);border-radius:100px;padding:0 14px;font-size:14px;color:var(--text);outline:none';
+      const use = () => { const t = normTag(inp.value); if (t) { selected = t; if (!getTags().includes(t)) extra.add(t); drawChips(); } };
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); use(); } });
+      inp.addEventListener('blur', use);
+      chipsEl.appendChild(inp);
+    }
+  };
+  const extra = new Set();
+  const origGet = getTags; getTags = () => [...new Set([...origGet(), ...extra])];
+  const showResult = (code, tag) => {
+    const url = inviteUrl(code);
+    result.innerHTML = `<div class="inv-link"><input class="modal-input" readonly aria-label="Invite link"><div class="row-actions"><button type="button" class="btn btn-save inv-copy">Copy link</button><button type="button" class="btn btn-outline inv-share">Share</button></div><p>Anyone with this link can see every photo under #${esc(tag)}.</p></div>`;
+    result.querySelector('input').value = url;
+    result.querySelector('.inv-copy').addEventListener('click', () => copyText(url));
+    result.querySelector('.inv-share').addEventListener('click', () => shareInvite(url, tag));
+  };
+  const refresh = async () => {
+    drawChips();
+    if (!isConfigured()) return;
+    let rows = [];
+    try {
+      const r = await sbFetch(`/rest/v1/invites?select=*&order=created_at.desc${scopeToMine ? `&created_by=eq.${encodeURIComponent(createdBy())}` : ''}`);
+      if (r.ok) rows = await r.json();
+    } catch {}
+    listEl.innerHTML = '';
+    if (!rows.length) return;
+    const names = new Map((adminDeviceCache || []).map(d => [d.device_id, d.name]));
+    rows.forEach(inv => {
+      const row = document.createElement('div'); row.className = 'tag-row';
+      const by = inv.created_by === 'admin' ? 'admin' : (names.get(inv.created_by) || 'a friend');
+      row.innerHTML = `<span class="name"></span><button type="button" class="btn btn-outline inv-row-copy">Copy</button><button type="button" class="btn btn-danger inv-row-del">Revoke</button><span class="cnt"></span>`;
+      row.querySelector('.name').textContent = '#' + inv.tag;
+      row.querySelector('.cnt').textContent = `${inv.uses || 0} joined${scopeToMine ? '' : ' · by ' + by}`;
+      row.querySelector('.inv-row-copy').addEventListener('click', () => copyText(inviteUrl(inv.code)));
+      row.querySelector('.inv-row-del').addEventListener('click', async () => {
+        if (!confirm(`Revoke this link for #${inv.tag}? People who already joined keep their access.`)) return;
+        const r = await sbFetch(`/rest/v1/invites?code=eq.${encodeURIComponent(inv.code)}`, { method: 'DELETE' });
+        if (r.ok || r.status === 204) { toast('Link revoked'); refresh(); } else toast('Couldn’t revoke it');
+      });
+      listEl.appendChild(row);
+    });
+  };
+  root.querySelector('.inv-create').addEventListener('click', async e => {
+    const b = e.currentTarget;
+    if (!selected) { toast('Pick a tag first'); return; }
+    if (!getTags().includes(selected) && !allowNew) { toast('Pick one of your tags'); return; }
+    b.disabled = true;
+    const code = makeInviteCode();
+    try {
+      const r = await sbFetch('/rest/v1/invites', { method: 'POST', body: JSON.stringify({ code, tag: selected, created_by: createdBy() }) });
+      if (!r.ok) throw new Error('insert failed');
+      showResult(code, selected);
+      refresh();
+    } catch { toast('Couldn’t create the link — run the setup SQL (Overview ▸ Private access)'); }
+    b.disabled = false;
+  });
+  return { refresh };
+}
+let adminInvites = null, userInvites = null;
+function initInvites() {
+  adminInvites = createInvitePanel(document.getElementById('invite-panel-admin'), {
+    getTags: () => [...new Set([...tagSettings.presets, ...allTagCounts(adminPhotoCache).map(t => t[0]), ...(adminDeviceCache || []).flatMap(d => d.allowed_tags || [])])],
+    createdBy: () => 'admin', scopeToMine: false, allowNew: true
+  });
+  userInvites = createInvitePanel(document.getElementById('invite-panel-user'), {
+    getTags: () => isAdminSession() ? getTagPool().map(x => x[0]) : [...access.tags],
+    createdBy: () => DEVICE_ID, scopeToMine: true, allowNew: false
+  });
+  // admin: edit one person's tag access
+  const modal = document.getElementById('uaccess-modal');
+  document.getElementById('uaccess-cancel').addEventListener('click', closeUaccess);
+  document.getElementById('uaccess-save').addEventListener('click', saveUaccess);
+  modal.addEventListener('click', e => { if (e.target === modal) closeUaccess(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('open')) closeUaccess(); });
+}
+let uaccessDev = null, uaccessSel = new Set();
+function drawUaccess() {
+  const box = document.getElementById('uaccess-tags');
+  box.innerHTML = '';
+  const pool = [...new Set([...tagSettings.presets, ...allTagCounts(adminPhotoCache).map(t => t[0]), ...(adminDeviceCache || []).flatMap(d => d.allowed_tags || []), ...uaccessSel])];
+  pool.forEach(t => {
+    const on = uaccessSel.has(t);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tag-chip' + (on ? ' on' : ''); b.textContent = '#' + t;
+    b.setAttribute('aria-pressed', String(on));
+    b.addEventListener('click', () => { on ? uaccessSel.delete(t) : uaccessSel.add(t); drawUaccess(); });
+    box.appendChild(b);
+  });
+  const inp = document.createElement('input');
+  inp.className = 'tag-new'; inp.type = 'text'; inp.maxLength = 24; inp.placeholder = '+ new tag'; inp.autocapitalize = 'off';
+  inp.setAttribute('aria-label', 'Add a new tag');
+  const add = () => { const t = normTag(inp.value); if (t) { uaccessSel.add(t); drawUaccess(); } };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); add(); } });
+  inp.addEventListener('blur', () => { if (inp.value.trim()) add(); });
+  box.appendChild(inp);
+}
+async function openUaccess(d) {
+  uaccessDev = d; uaccessSel = new Set(d.allowed_tags || []);
+  document.getElementById('uaccess-title').textContent = `${d.name || 'Unknown'} — tag access`;
+  if (!adminPhotoCache.length) adminPhotoCache = await loadPhotos();
+  drawUaccess();
+  document.getElementById('uaccess-modal').classList.add('open');
+}
+function closeUaccess() { document.getElementById('uaccess-modal').classList.remove('open'); uaccessDev = null; }
+async function saveUaccess() {
+  const d = uaccessDev; if (!d) return;
+  const tags = [...uaccessSel];
+  const r = await sbFetch(`/rest/v1/devices?id=eq.${d.id}`, { method: 'PATCH', body: JSON.stringify({ allowed_tags: tags }) });
+  if (!r.ok) { toast('Couldn’t save — run the setup SQL (Overview ▸ Private access)'); return; }
+  d.allowed_tags = tags;
+  if (d.device_id === DEVICE_ID) access.tags = tags;
+  closeUaccess();
+  toast(tags.length ? 'Access saved ✓' : 'Access removed — they will see nothing');
+  loadAdminDevices();
+}
+const ACCESS_SQL = `alter table devices add column if not exists allowed_tags text[] not null default '{}';
+create table if not exists invites (
+  code text primary key,
+  tag text not null,
+  created_by text not null default 'admin',
+  created_at timestamptz not null default now(),
+  uses int not null default 0
+);
+alter table invites enable row level security;
+drop policy if exists "invites open" on invites;
+create policy "invites open" on invites for all using (true) with check (true);`;
+async function loadAccessSetup(deviceList) {
+  const card = document.getElementById('access-card');
+  const check = async path => { try { const r = await sbFetch(path); return r.ok ? await r.json() : null; } catch { return null; } };
+  const [col, inv] = await Promise.all([check('/rest/v1/devices?select=allowed_tags&limit=1'), check('/rest/v1/invites?select=code')]);
+  const ready = col !== null && inv !== null;
+  const members = deviceList.filter(d => (d.allowed_tags || []).length).length;
+  card.innerHTML = infoRow('Status', ready ? 'Ready ✓' : 'Setup needed') +
+    infoRow('People with access', `${members} of ${deviceList.length}`) +
+    infoRow('Active invite links', inv ? inv.length : '—') +
+    `<details class="setup"${ready ? '' : ' open'}><summary>Setup SQL</summary><pre class="sql"></pre><button type="button" class="btn btn-outline" style="width:100%;min-height:44px">Copy SQL</button></details>`;
+  card.querySelector('.sql').textContent = ACCESS_SQL;
+  card.querySelector('details .btn').addEventListener('click', async () => { try { await navigator.clipboard.writeText(ACCESS_SQL); toast('SQL copied ✓'); } catch { toast('Select and copy the text'); } });
+}
+
 /* ---- Tag rules set by the admin ---- */
 let tagSettings = { mode: 'open', presets: [] };
 async function loadTagSettings() {
@@ -1696,6 +1971,9 @@ let myPhotos = [];
 const isMine = p => p && p.device_id === DEVICE_ID;
 async function loadProfile() {
   renderProfileHeader();
+  const wrap = document.getElementById('profile-invite-wrap');
+  wrap.hidden = !(access.tags.length || isAdminSession());
+  if (!wrap.hidden && userInvites) userInvites.refresh();
   const list = document.getElementById('profile-list');
   if (!isConfigured()) { myPhotos = []; renderProfile(); return; }
   list.setAttribute('aria-busy', 'true');
@@ -1780,6 +2058,7 @@ async function saveEdit() {
   const tags = editTags.get();
   btn.disabled = true; btn.classList.add('is-loading'); btn.textContent = 'Saving…';
   const res = await updatePhoto(p.id, { caption, tags });
+  if (res) await grantTags(tags);
   btn.disabled = false; btn.classList.remove('is-loading'); btn.textContent = 'Save changes';
   if (!res) { toast('Couldn’t save — try again'); return; }
   p.caption = caption;
@@ -1918,6 +2197,8 @@ async function checkAdminPw() {
   btn.textContent = 'Unlock admin'; btn.disabled = false; btn.classList.remove('is-loading');
   if (input === ADMIN_PASSWORD) {
     closeAdminModal();
+    sessionStorage.setItem('adminSession', '1');   // the admin sees every photo for the rest of this tab session
+    if (accessLocked) { accessLocked = false; document.body.classList.remove('locked'); loadGallery(); }
     showScreen('admin');
   } else {
     document.getElementById('admin-pw-input').style.borderColor = 'var(--danger)';
@@ -2094,19 +2375,12 @@ async function loadAdminOverview() {
   const today = new Date().toDateString();
   document.getElementById('stat-today').textContent   = allPhotos.filter(p => new Date(p.created_at).toDateString() === today).length;
   loadHighlights(allPhotos, allDevices, limit);
+  loadAccessSetup(allDevices);
   loadDbInfo(allPhotos, allDevices);
   loadStorageInfo(allPhotos);
 }
 
 /* ---- PHOTOS ---- */
-function tagBadge(n) {
-  const bd = document.createElement('span');
-  bd.className = 'agrid-badge';
-  bd.title = n + ' tag' + (n !== 1 ? 's' : '');
-  bd.setAttribute('aria-hidden', 'true');
-  bd.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>' + n;
-  return bd;
-}
 async function loadAdminPhotos(search = '') {
   const list = document.getElementById('admin-photo-list');
   list.innerHTML = '<div style="padding:20px;text-align:center"><div class="spinner"></div></div>';
@@ -2130,9 +2404,6 @@ async function loadAdminPhotos(search = '') {
     img.alt = ''; img.decoding = 'async'; img.loading = 'lazy'; img.src = p.url;
     const nm = document.createElement('span'); nm.className = 'agrid-name'; nm.textContent = p.uploader || 'Anonymous';
     tile.append(img, nm);
-    if (photoTags(p).length) {
-      tile.appendChild(tagBadge(photoTags(p).length));
-    }
     tile.addEventListener('click', () => openAdminEdit(p, tile));
     grid.appendChild(tile);
   });
@@ -2182,13 +2453,6 @@ async function saveAdminEdit() {
   if (!res) { toast('Error saving'); return; }
   p.caption = cap; if (res !== 'no-tags') p.tags = tags;
   const g = photos.find(x => x.id === p.id); if (g) { g.caption = p.caption; g.tags = p.tags; }
-  // refresh the tile's tag badge
-  if (aeditTile) {
-    aeditTile.querySelector('.agrid-badge')?.remove();
-    if (photoTags(p).length) {
-      aeditTile.appendChild(tagBadge(photoTags(p).length));
-    }
-  }
   toast(res === 'no-tags' ? 'Caption saved, but tags need a database update' : 'Saved ✓');
   closeAdminEdit();
 }
@@ -2227,7 +2491,9 @@ async function loadAdminTags() {
   box.innerHTML = '<div style="padding:12px;text-align:center"><div class="spinner"></div></div>';
   adminPhotoCache = await loadPhotos();
   await loadTagSettings();
+  if (!adminDeviceCache.length) adminDeviceCache = await loadDevices();
   renderAdminTags();
+  adminInvites && adminInvites.refresh();
 }
 function renderAdminTags() {
   document.querySelectorAll('#tag-mode-btns [data-mode]').forEach(b => {
@@ -2412,6 +2678,7 @@ async function loadAdminDevices() {
           <div class="dev-name">${esc(d.name || 'Unknown')}</div>
           <div class="dev-meta">Last seen ${esc(new Date(d.last_seen).toLocaleString())}</div>
           <div class="dev-meta">ID: ${esc(d.device_id?.slice(0, 16))}…</div>
+          <div class="dev-meta">Can see: ${(d.allowed_tags || []).length ? esc((d.allowed_tags || []).map(t => '#' + t).join(' ')) : 'nothing yet'}</div>
         </div>
         <div class="dev-count-wrap">
           <div class="dev-count">${Number(d.photo_count) || 0}</div>
@@ -2420,9 +2687,11 @@ async function loadAdminDevices() {
       </div>
       ${limit > 0 ? `<div class="dev-bar"><div class="dev-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>` : ''}
       <div class="dev-actions">
+        <button class="btn btn-save dev-access-btn">Tag access</button>
         <button class="btn btn-outline dev-reset-btn">Reset count</button>
         <button class="btn btn-danger dev-delete-btn">Delete device</button>
       </div>`;
+    card.querySelector('.dev-access-btn').addEventListener('click', () => openUaccess(d));
     card.querySelector('.dev-reset-btn').addEventListener('click', async () => {
       if (!confirm('Reset photo count to 0?')) return;
       const r = await sbFetch(`/rest/v1/devices?id=eq.${d.id}`, { method: 'PATCH', body: JSON.stringify({ photo_count: 0 }) });
@@ -2482,6 +2751,7 @@ function setCameraError(err) {
 }
 
 async function startCamera() {
+  if (accessLocked) return;
   const video = document.getElementById('camera-video');
   if (stream) { stream.getTracks().forEach(t => t.stop()); }
   try {
@@ -2893,9 +3163,13 @@ function captureFrame() {
 
 /* ---- Pool of tags people can choose from ---- */
 let tagPool = new Map();
-function getTagPool() { return tagPool.size ? [...tagPool.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])) : allTagCounts(photos); }
+function getTagPool() {
+  if (!isAdminSession()) return access.tags.map(t => [t, photos.filter(p => photoTags(p).includes(t)).length]);
+  return tagPool.size ? [...tagPool.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])) : allTagCounts(photos);
+}
 async function refreshTagPool() {
   if (!isConfigured()) return;
+  if (!isAdminSession()) { previewTags && previewTags.refresh(); editTags && editTags.refresh(); return; }   // friends only ever see their own tags
   try {
     const r = await sbFetch(`/rest/v1/${TABLE_NAME}?select=tags`);
     if (r.ok) {
@@ -2921,7 +3195,8 @@ function createTagInput(root) {
     sugEl.innerHTML = '';
     chipsEl.innerHTML = '';
     // every tag people can choose from, plus anything already selected
-    const pool = presetOnly ? [...tagSettings.presets] : [...new Set([...tagSettings.presets, ...getTagPool().map(x => x[0])])];
+    const pool = !isAdminSession() ? [...access.tags]
+      : presetOnly ? [...tagSettings.presets] : [...new Set([...tagSettings.presets, ...getTagPool().map(x => x[0])])];
     const shown = [...pool, ...tags.filter(t => !pool.includes(t))];
     if (!shown.length) {
       if (presetOnly) { const lab = document.createElement('span'); lab.className = 'sug-label'; lab.textContent = 'No tags are available yet'; chipsEl.appendChild(lab); }
@@ -2944,7 +3219,7 @@ function createTagInput(root) {
   const add = raw => {
     const t = normTag(raw);
     if (!t || tags.includes(t)) return;
-    if (tagSettings.mode === 'preset' && !tagSettings.presets.includes(t)) { toast('Pick a tag from the list'); return; }
+    if (tagSettings.mode === 'preset' && !(isAdminSession() ? tagSettings.presets : access.tags).includes(t)) { toast('Pick a tag from the list'); return; }
     if (tags.length >= MAX_TAGS) { toast(`Up to ${MAX_TAGS} tags per photo`); return; }
     tags.push(t); render();
   };
@@ -2966,12 +3241,18 @@ let previewTags = null, editTags = null;
 let pendingBlob = null;
 async function submitPreview() {
   if (!pendingBlob) { toast('No photo to upload'); return; }
+  let tags = previewTags ? previewTags.get() : [];
+  if (!isAdminSession() && access.tags.length) {
+    // a photo needs one of your tags, otherwise nobody but you could see it
+    if (!tags.length && access.tags.length === 1) tags = [access.tags[0]];
+    if (!tags.length) { toast('Choose a tag so your friends can see this photo'); return; }
+  }
   const btn = document.getElementById('preview-upload-btn');
   btn.textContent = 'Uploading…'; btn.disabled = true; btn.classList.add('is-loading');
   const caption = document.getElementById('preview-caption').value.trim();
-  const tags = previewTags ? previewTags.get() : [];
   try {
     await doUpload(pendingBlob, 'photo.jpg', caption, tags);
+    await grantTags(tags);
     document.getElementById('preview-modal').classList.remove('open');
     pendingBlob = null;
   } catch(e) {
@@ -3067,7 +3348,8 @@ async function saveName() {
   localStorage.setItem('uploaderName', v);
   document.getElementById('name-modal').classList.remove('open');
   // Another device already uses this name? Offer to pick up that record.
-  const prev = await findPreviousRecord(v);
+  let prev = await findPreviousRecord(v);
+  if (prev && !(prev.allowed_tags || []).every(t => access.tags.includes(t))) prev = null;   // never inherit more access
   if (prev) {
     const n = prev.photo_count || 0;
     const when = prev.last_seen ? new Date(prev.last_seen).toLocaleDateString() : '';
@@ -3133,6 +3415,7 @@ function toast(msg) {
   initFeedTools();
   initProfile();
   initAdminEdit();
+  initInvites();
   loadTagSettings().then(() => { previewTags && previewTags.refresh(); editTags && editTags.refresh(); });
   refreshTagPool();
   document.getElementById('timer-btn').addEventListener('click', cycleTimer);
@@ -3227,8 +3510,11 @@ function toast(msg) {
     if (e.ctrlKey && e.shiftKey && e.key === 'A') triggerAdminPanel();
   });
 
-  // Start
+  // Start — a link with ?invite=… is redeemed first; without access the page stays blank
+  await initAccess();
+  if (accessLocked) { lockApp(); return; }
   loadGallery();
+  if (isAdminSession() && !access.tags.length) return;   // admin looking around from a device that isn't a member
   startCamera();
   if (!uploaderName) {
     setTimeout(showNameModal, 500);
