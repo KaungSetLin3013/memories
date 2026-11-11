@@ -661,7 +661,7 @@
   }
 </style>
 </head>
-<body>
+<body class="locked">
 
 <!-- CONFIG — see setup.js. Replace SUPABASE_URL / SUPABASE_ANON_KEY there with your own Supabase details -->
 <script src="setup.js"></script>
@@ -1598,11 +1598,12 @@ async function initAccess() {
   await loadAccess();
   accessLocked = isConfigured() && !isAdminSession() && access.tags.length === 0;
 }
-// Opened from the main page without an invite: show nothing at all. Five quick taps still lead the admin to the password box.
-function lockApp() {
-  document.body.classList.add('locked');
+// Opened from the main page without an invite: show nothing at all (the page starts blank until access is confirmed).
+function lockApp() { document.body.classList.add('locked'); }
+// Admin entry on a blank page: 5 quick taps anywhere. Pointer events fire for every tap on phones, even on empty areas where "click" can be skipped.
+function initSecretTaps() {
   let taps = 0, timer = null;
-  document.addEventListener('click', () => {
+  document.addEventListener('pointerup', () => {
     if (!document.body.classList.contains('locked')) return;
     taps++; clearTimeout(timer); timer = setTimeout(() => { taps = 0; }, 2500);
     if (taps >= 5) { taps = 0; triggerAdminPanel(); }
@@ -3391,6 +3392,7 @@ function toast(msg) {
    INIT
    ============================================================ */
 (async () => {
+  initSecretTaps();
   // Nav
   NAV_ORDER.forEach(n => document.getElementById('nav-' + n).addEventListener('click', () => showScreen(n)));
   positionNav(currentScreen, false);
@@ -3511,8 +3513,15 @@ function toast(msg) {
   });
 
   // Start — a link with ?invite=… is redeemed first; without access the page stays blank
+  // Admin address: add ?admin to the page address to go straight to the password box
+  const sp = new URLSearchParams(location.search);
+  if (sp.has('admin') || location.hash === '#admin') {
+    try { history.replaceState(null, '', location.pathname); } catch {}
+    triggerAdminPanel();
+  }
   await initAccess();
   if (accessLocked) { lockApp(); return; }
+  document.body.classList.remove('locked');
   loadGallery();
   if (isAdminSession() && !access.tags.length) return;   // admin looking around from a device that isn't a member
   startCamera();
