@@ -1609,6 +1609,12 @@ async function initAccess() {
 }
 // Opened from the main page without an invite: show nothing at all (the page starts blank until access is confirmed).
 function lockApp() { document.body.classList.add('locked'); }
+// The nav bar can't be measured while the page is hidden, so place the bump once it is visible
+function revealApp() {
+  document.body.classList.remove('locked');
+  positionNav(currentScreen, false);
+  requestAnimationFrame(() => positionNav(currentScreen, false));
+}
 // Admin entry on a blank page: 5 quick taps anywhere. Pointer events fire for every tap on phones, even on empty areas where "click" can be skipped.
 function initSecretTaps() {
   let taps = 0, timer = null;
@@ -2249,7 +2255,7 @@ async function checkAdminPw() {
   if (input === ADMIN_PASSWORD) {
     closeAdminModal();
     sessionStorage.setItem('adminSession', '1');   // the admin sees every photo for the rest of this tab session
-    if (accessLocked) { accessLocked = false; document.body.classList.remove('locked'); loadGallery(); }
+    if (accessLocked) { accessLocked = false; revealApp(); loadGallery(); }
     showScreen('admin');
   } else {
     document.getElementById('admin-pw-input').style.borderColor = 'var(--danger)';
@@ -3571,7 +3577,7 @@ function toast(msg) {
   }
   await initAccess();
   if (accessLocked) { lockApp(); return; }
-  document.body.classList.remove('locked');
+  revealApp();
   loadGallery();
   if (isAdminSession() && !access.tags.length) return;   // admin looking around from a device that isn't a member
   startCamera();
