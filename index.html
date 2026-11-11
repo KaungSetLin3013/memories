@@ -262,7 +262,8 @@
   .tag-input input[hidden]{display:none}
   /* tag input (upload + edit) */
   .tag-input{margin-bottom:var(--gap-m)}
-  .tag-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .tag-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--gap-s);max-height:148px;overflow-y:auto;overscroll-behavior:contain}
+  .tag-chips .sug-label{width:100%;font-size:12px;color:var(--text-muted)}
   .tag-chips:empty{display:none}
   .tag-chip{
     min-height:36px;padding:0 12px;border-radius:100px;font-size:14px;font-weight:600;
@@ -516,20 +517,33 @@
   .filter-tag:active{transform:scale(.94);transition-duration:80ms}
   .filter-tag.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
   .admin-photo-row{
-    display:flex;gap:var(--gap-m);align-items:flex-start;
+    display:flex;flex-direction:column;gap:var(--gap-s);
     background:var(--surface);border:1px solid var(--border);
-    border-radius:var(--radius);padding:var(--gap-m);margin-bottom:var(--gap-s);
+    border-radius:var(--radius);padding:var(--gap-m);margin-bottom:var(--gap-m);
   }
-  .admin-photo-row img{width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0}
+  .apr-top{display:flex;gap:var(--gap-m);align-items:flex-start}
+  .apr-thumb{
+    width:120px;height:120px;flex-shrink:0;padding:0;
+    border:2px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--surface2);
+  }
+  .apr-thumb img{width:100%;height:100%;object-fit:cover;display:block}
   .admin-photo-row .info{flex:1;min-width:0}
   .admin-photo-row .meta{font-size:13px;color:var(--text-muted);margin-bottom:var(--gap-s);overflow-wrap:anywhere}
   .admin-photo-row .cap-input{
     width:100%;min-height:48px;background:var(--surface2);border:1px solid var(--border-strong);
-    border-radius:12px;padding:0 12px;font-size:16px;outline:none;margin-bottom:var(--gap-s);
+    border-radius:12px;padding:0 12px;font-size:16px;outline:none;
   }
   .admin-photo-row .cap-input:focus{border-color:var(--accent)}
-  .row-actions{display:flex;flex-wrap:wrap;gap:var(--gap-s)}
-  .row-actions .btn{padding:0 var(--gap-m);font-size:16px}
+  .apr-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .apr-tags .tag-chip{min-height:40px}
+  .apr-tags .tag-new{
+    min-height:40px;width:120px;background:var(--surface2);border:1px dashed var(--border-strong);
+    border-radius:100px;padding:0 14px;font-size:14px;color:var(--text);outline:none;
+  }
+  .apr-tags .tag-new:focus{border-color:var(--accent);border-style:solid}
+  .row-actions{display:flex;gap:var(--gap-s)}
+  .row-actions .btn{flex:1;min-height:48px;padding:0;display:flex;align-items:center;justify-content:center}
+  .row-actions .btn svg{width:22px;height:22px}
   .admin-section-title{font-size:14px;font-weight:600;color:var(--text-muted);margin:var(--gap-l) 0 var(--gap-s)}
   .admin-section-title:first-child{margin-top:0}
   .settings-card{
@@ -1282,7 +1296,7 @@ function showScreen(name) {
   document.body.classList.toggle('no-nav', !NAV_ORDER.includes(name));
   if (NAV_ORDER.includes(name)) positionNav(name, NAV_ORDER.includes(prevScreen) && prevScreen !== name);
   if (name === 'gallery') { loadGallery(); }
-  if (name === 'camera') { startCamera(); updateCamCount(); refreshDeviceCount(); loadTagSettings().then(() => previewTags && previewTags.refresh()); }
+  if (name === 'camera') { startCamera(); updateCamCount(); refreshDeviceCount(); loadTagSettings().then(() => previewTags && previewTags.refresh()); refreshTagPool(); }
   if (name === 'admin') { delete document.getElementById('admin-nav').dataset.ready; loadAdminGrid(); }
   if (name === 'profile') { loadProfile(); }
 }
@@ -1696,6 +1710,7 @@ function openEdit(p) {
   document.getElementById('edit-img').src = p.url;
   document.getElementById('edit-caption').value = p.caption || '';
   editTags.set(photoTags(p));
+  refreshTagPool();
   document.getElementById('edit-modal').classList.add('open');
 }
 function closeEdit() { document.getElementById('edit-modal').classList.remove('open'); editingPhoto = null; }
@@ -1948,40 +1963,78 @@ async function loadAdminPhotos(search = '') {
   if (adminSortMode === 'uploader') photos.sort((a,b) => (a.uploader||'').localeCompare(b.uploader||''));
   list.innerHTML = '';
   if (!photos.length) { list.innerHTML = '<p style="color:var(--text-muted);font-size:14px">No photos found.</p>'; return; }
-  photos.forEach(p => {
+  // every tag an admin can pick from: preset tags first, then tags already in use
+  const pool = [...new Set([...tagSettings.presets, ...allTagCounts(adminPhotoCache).map(t => t[0])])];
+  const ICONS = {
+    save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>',
+    dl:   '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+    del:  '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>'
+  };
+  const iconBtn = (cls, kind, label) =>
+    `<button type="button" class="btn ${cls}" aria-label="${label}" title="${label}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[kind]}</svg></button>`;
+  photos.forEach((p, idx) => {
     const row = document.createElement('div');
     row.className = 'admin-photo-row';
     row.id = 'admin-item-' + p.id;
-    const img = document.createElement('img');
-    img.alt = 'Photo by ' + (p.uploader || 'a guest'); img.decoding = 'async';
-    img.src = p.url; img.loading = 'lazy';
-    const info = document.createElement('div');
-    info.className = 'info';
-    info.innerHTML = `
-      <div class="meta">${esc(p.uploader || 'Anonymous')} · ${esc(new Date(p.created_at).toLocaleString())}</div>
-      <input class="cap-input" type="text" value="${esc(p.caption || '')}" placeholder="No caption" aria-label="Caption">
-      <input class="cap-input tag-edit" type="text" value="${esc(photoTags(p).join(', '))}" placeholder="No tags (separate with commas)" aria-label="Tags" style="margin-top:var(--gap-s)">
+    row.innerHTML = `
+      <div class="apr-top">
+        <button type="button" class="apr-thumb" aria-label="View photo"><img alt="" decoding="async" loading="lazy"></button>
+        <div class="info">
+          <div class="meta">${esc(p.uploader || 'Anonymous')} · ${esc(new Date(p.created_at).toLocaleString())}</div>
+          <input class="cap-input" type="text" value="${esc(p.caption || '')}" placeholder="No caption" aria-label="Caption">
+        </div>
+      </div>
+      <div class="apr-tags" role="group" aria-label="Tags"></div>
       <div class="row-actions">
-        <button class="btn btn-save row-save">Save changes</button>
-        <button class="btn btn-outline row-dl">Download</button>
-        <button class="btn btn-danger row-del">Delete photo</button>
+        ${iconBtn('btn-save row-save', 'save', 'Save changes')}
+        ${iconBtn('btn-outline row-dl', 'dl', 'Download photo')}
+        ${iconBtn('btn-danger row-del', 'del', 'Delete photo')}
       </div>`;
-    info.querySelector('.row-save').addEventListener('click', async () => {
-      const cap = info.querySelector('.cap-input').value;
-      const tags = [...new Set(info.querySelector('.tag-edit').value.split(/[\s,]+/).map(normTag).filter(Boolean))].slice(0, 10);
+    const img = row.querySelector('img');
+    img.alt = 'Photo by ' + (p.uploader || 'a guest');
+    img.src = p.url;
+    row.querySelector('.apr-thumb').addEventListener('click', () => openLightbox(idx, photos));
+
+    // tag picker: tap to choose / un-choose; type a new tag to add it
+    const sel = new Set(photoTags(p));
+    const tagBox = row.querySelector('.apr-tags');
+    const drawTags = () => {
+      tagBox.innerHTML = '';
+      [...new Set([...pool, ...sel])].forEach(t => {
+        const b = document.createElement('button');
+        const on = sel.has(t);
+        b.type = 'button'; b.className = 'tag-chip' + (on ? ' on' : ''); b.textContent = '#' + t;
+        b.setAttribute('aria-pressed', String(on));
+        b.addEventListener('click', () => { on ? sel.delete(t) : sel.add(t); drawTags(); });
+        tagBox.appendChild(b);
+      });
+      const inp = document.createElement('input');
+      inp.className = 'tag-new'; inp.type = 'text'; inp.maxLength = 24; inp.placeholder = '+ new tag';
+      inp.setAttribute('aria-label', 'Add a new tag'); inp.autocapitalize = 'off'; inp.enterKeyHint = 'done';
+      const addNew = () => { const t = normTag(inp.value); if (t && sel.size < 10) { sel.add(t); drawTags(); } };
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addNew(); } });
+      inp.addEventListener('blur', () => { if (inp.value.trim()) addNew(); });
+      tagBox.appendChild(inp);
+    };
+    drawTags();
+
+    row.querySelector('.row-save').addEventListener('click', async e => {
+      const b = e.currentTarget; b.disabled = true;
+      const cap = row.querySelector('.cap-input').value;
+      const tags = [...sel];
       const res = await updatePhoto(p.id, { caption: cap, tags });
+      b.disabled = false;
       if (res) {
         p.caption = cap; if (res !== 'no-tags') p.tags = tags;
-        info.querySelector('.tag-edit').value = photoTags(p).join(', ');
         toast(res === 'no-tags' ? 'Caption saved, but tags need a database update' : 'Saved ✓');
       } else toast('Error saving');
     });
-    info.querySelector('.row-dl').addEventListener('click', async e => {
+    row.querySelector('.row-dl').addEventListener('click', async e => {
       const b = e.currentTarget; b.disabled = true;
       try { await downloadPhoto(p); } catch { toast('Download failed'); }
       b.disabled = false;
     });
-    info.querySelector('.row-del').addEventListener('click', async () => {
+    row.querySelector('.row-del').addEventListener('click', async () => {
       if (!confirm('Delete this photo?')) return;
       await deletePhoto(p.id, p.url);
       row.remove();
@@ -1990,8 +2043,6 @@ async function loadAdminPhotos(search = '') {
       document.getElementById('stat-photos').textContent = adminPhotoCache.length;
       toast('Photo deleted');
     });
-    row.appendChild(img);
-    row.appendChild(info);
     list.appendChild(row);
   });
 }
@@ -2661,8 +2712,26 @@ function captureFrame() {
     document.getElementById('preview-img').src = dataUrl;
     document.getElementById('preview-caption').value = '';
     if (previewTags) previewTags.set([]);
+    refreshTagPool();
     document.getElementById('preview-modal').classList.add('open');
   }, 'image/jpeg', 0.92);
+}
+
+/* ---- Pool of tags people can choose from ---- */
+let tagPool = new Map();
+function getTagPool() { return tagPool.size ? [...tagPool.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])) : allTagCounts(photos); }
+async function refreshTagPool() {
+  if (!isConfigured()) return;
+  try {
+    const r = await sbFetch(`/rest/v1/${TABLE_NAME}?select=tags`);
+    if (r.ok) {
+      const m = new Map();
+      (await r.json()).forEach(row => photoTags(row).forEach(t => m.set(t, (m.get(t) || 0) + 1)));
+      tagPool = m;
+    }
+  } catch {}
+  previewTags && previewTags.refresh();
+  editTags && editTags.refresh();
 }
 
 /* ---- Tag input (used when uploading and when editing) ---- */
@@ -2673,33 +2742,30 @@ function createTagInput(root) {
   const sugEl = root.querySelector('.tag-suggest');
   let tags = [];
   const render = () => {
-    chipsEl.innerHTML = '';
-    tags.forEach(t => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'tag-chip on';
-      b.textContent = '#' + t + ' ✕';
-      b.setAttribute('aria-label', 'Remove tag ' + t);
-      b.addEventListener('click', () => { tags = tags.filter(x => x !== t); render(); });
-      chipsEl.appendChild(b);
-    });
     const presetOnly = tagSettings.mode === 'preset';
     input.hidden = presetOnly;
     sugEl.innerHTML = '';
-    const pool = presetOnly ? tagSettings.presets : [...new Set([...tagSettings.presets, ...allTagCounts(photos).map(x => x[0])])];
-    const sug = pool.filter(t => !tags.includes(t)).slice(0, presetOnly ? 20 : 8);
-    if (presetOnly && !tagSettings.presets.length) {
-      const lab = document.createElement('span'); lab.className = 'sug-label'; lab.textContent = 'No tags are available yet';
-      sugEl.appendChild(lab);
-    } else if (sug.length && tags.length < MAX_TAGS) {
-      const lab = document.createElement('span'); lab.className = 'sug-label'; lab.textContent = presetOnly ? 'Pick a tag' : 'Suggested tags';
-      sugEl.appendChild(lab);
-      sug.forEach(t => {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'tag-chip'; b.textContent = '#' + t;
-        b.addEventListener('click', () => add(t));
-        sugEl.appendChild(b);
-      });
+    chipsEl.innerHTML = '';
+    // every tag people can choose from, plus anything already selected
+    const pool = presetOnly ? [...tagSettings.presets] : [...new Set([...tagSettings.presets, ...getTagPool().map(x => x[0])])];
+    const shown = [...pool, ...tags.filter(t => !pool.includes(t))];
+    if (!shown.length) {
+      if (presetOnly) { const lab = document.createElement('span'); lab.className = 'sug-label'; lab.textContent = 'No tags are available yet'; chipsEl.appendChild(lab); }
+      return;
     }
+    const lab = document.createElement('span');
+    lab.className = 'sug-label';
+    lab.textContent = presetOnly ? 'Tap to choose' : 'Tap to choose, or type a new one';
+    chipsEl.appendChild(lab);
+    shown.forEach(t => {
+      const on = tags.includes(t);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tag-chip' + (on ? ' on' : '');
+      b.textContent = '#' + t;
+      b.setAttribute('aria-pressed', String(on));
+      b.addEventListener('click', () => { on ? (tags = tags.filter(x => x !== t), render()) : add(t); });
+      chipsEl.appendChild(b);
+    });
   };
   const add = raw => {
     const t = normTag(raw);
@@ -2887,6 +2953,7 @@ function toast(msg) {
   initFeedTools();
   initProfile();
   loadTagSettings().then(() => { previewTags && previewTags.refresh(); editTags && editTags.refresh(); });
+  refreshTagPool();
   document.getElementById('timer-btn').addEventListener('click', cycleTimer);
   document.getElementById('ratio-btn').addEventListener('click', cycleRatio);
   document.getElementById('shutter-btn').addEventListener('click', takePhoto);
