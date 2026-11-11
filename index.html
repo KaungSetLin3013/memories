@@ -93,12 +93,6 @@
   .header .accent{color:var(--accent)}
   .header-sub{font-size:14px;color:var(--text-muted);min-height:20px;margin-top:2px}
   .header-actions{display:flex;gap:var(--gap-s)}
-  .back-link{
-    display:inline-flex;align-items:center;gap:4px;min-height:48px;
-    color:var(--accent);font-size:15px;font-weight:600;text-decoration:none;
-    margin-left:-4px;padding-right:var(--gap-s);
-  }
-  .back-link:hover{text-decoration:underline}
   .header-btn{
     width:48px;height:48px;
     background:var(--surface2);
@@ -161,6 +155,22 @@
   /* GALLERY SCREEN */
   #screen-gallery{overflow:hidden}
   #screen-gallery h1{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #screen-gallery{position:relative}
+  .header-btn{position:relative}
+  .header-btn[aria-expanded="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+  .filter-dot{position:absolute;top:7px;right:7px;width:11px;height:11px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+  .filter-dot[hidden]{display:none}
+  .header-btn[aria-expanded="true"] .filter-dot{background:var(--on-accent);border-color:var(--accent)}
+  /* pull down to refresh */
+  .ptr{
+    position:absolute;left:50%;top:0;z-index:5;width:44px;height:44px;margin-left:-22px;border-radius:50%;
+    background:var(--surface2);border:1px solid var(--border-strong);box-shadow:0 4px 14px rgb(0 0 0 / .35);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;transform:translateY(-60px);pointer-events:none;transition:opacity 150ms,transform 250ms cubic-bezier(.34,1.56,.64,1);
+  }
+  .ptr.dragging{transition:none}
+  .ptr.ready{color:var(--accent);border-color:var(--accent)}
+  .ptr.spinning svg{animation:spin 800ms linear infinite}
   .pull-hint{display:none} /* admin entry is the gear button; the pull gesture still works */
   .gallery-scroll{
     flex:1;overflow-y:auto;padding:0 4px var(--gap-s);
@@ -796,18 +806,17 @@
 <div class="screen" id="screen-gallery">
   <header class="header header-gallery">
     <div class="header-main">
-      <a class="back-link" href="https://kaungsetlinn.com">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Portfolio
-      </a>
       <h1 aria-label="Memories">Memo<span class="accent">ries</span></h1>
       <p class="header-sub" id="gallery-count" aria-live="polite"></p>
     </div>
     <div class="header-actions">
-      <button class="header-btn" id="refresh-btn" aria-label="Refresh gallery" title="Refresh">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+      <button class="header-btn" id="filter-btn" aria-label="Filters and sorting" aria-expanded="false" aria-controls="feed-tools" title="Filters and sorting">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+        <span class="filter-dot" id="filter-dot" aria-hidden="true" hidden></span>
       </button>
     </div>
   </header>
+  <div class="ptr" id="ptr" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></div>
   <div class="pull-hint"><span>↓ Pull down 5 seconds for admin panel</span></div>
   <div class="feed-tools" id="feed-tools" hidden>
     <div class="tag-filter" id="tag-filter" role="group" aria-label="Filter by tag"></div>
@@ -1820,6 +1829,12 @@ async function saveSetting(key, value) {
 
 /* ---- Filters, tags and sorting ---- */
 const galleryState = { tags: new Set(), sort: 'newest', person: 'all', day: 'all' };
+let feedToolsOpen = false;
+function toggleFeedTools() {
+  feedToolsOpen = !feedToolsOpen;
+  document.getElementById('filter-btn').setAttribute('aria-expanded', String(feedToolsOpen));
+  document.getElementById('feed-tools').hidden = !(feedToolsOpen && photos.length);
+}
 let shuffleOrder = null;
 const SORTS = [
   ['newest', 'Newest first'], ['oldest', 'Oldest first'],
@@ -1888,6 +1903,7 @@ function syncFilterUI() {
     });
   }
   document.getElementById('clear-filters').hidden = !filtersActive();
+  document.getElementById('filter-dot').hidden = !(filtersActive() || galleryState.sort !== 'newest');
 }
 const filtersActive = () => galleryState.tags.size > 0 || galleryState.person !== 'all' || galleryState.day !== 'all';
 function toggleTagFilter(t) {
@@ -1934,7 +1950,7 @@ function renderGallery() {
   empty.style.display = 'none'; nomatch.style.display = 'none';
   lbList = [];
   if (!photos.length) { tools.hidden = true; count.textContent = ''; empty.style.display = 'flex'; return; }
-  tools.hidden = false;
+  tools.hidden = !feedToolsOpen;
   const vis = visiblePhotos();
   if (!vis.length) { count.textContent = `0 of ${photos.length} photos`; nomatch.style.display = 'flex'; return; }
   // One post per device (or per name when there is no device id)
@@ -2137,50 +2153,84 @@ function closeLightbox() {
 /* ============================================================
    PULL TO OPEN ADMIN
    ============================================================ */
-let pullStart = 0, pullActive = false, pullTimer = null, pullProgress = 0;
+let pullStart = 0, pullActive = false, pullTimer = null, pullDist = 0, pullAdmin = false, pullRefreshing = false;
+const PULL_THRESHOLD = 80;
 const galleryScroll = document.getElementById('gallery-scroll');
+const ptr = document.getElementById('ptr');
+
+function showPtr(dist) {
+  ptr.style.top = (galleryScroll.offsetTop + 8) + 'px';
+  ptr.classList.add('dragging');
+  ptr.classList.toggle('ready', dist >= PULL_THRESHOLD);
+  ptr.style.opacity = String(Math.min(1, dist / 60));
+  ptr.style.transform = `translateY(${Math.min(dist * 0.55, 70) - 56}px)`;
+  ptr.querySelector('svg').style.transform = `rotate(${dist * 3}deg)`;
+}
+function hidePtr() {
+  ptr.classList.remove('dragging', 'ready', 'spinning');
+  ptr.style.opacity = '0';
+  ptr.style.transform = 'translateY(-60px)';
+  ptr.querySelector('svg').style.transform = '';
+}
+async function doPullRefresh() {
+  pullRefreshing = true;
+  ptr.classList.remove('dragging'); ptr.classList.add('ready', 'spinning');
+  ptr.style.opacity = '1'; ptr.style.transform = 'translateY(0)';
+  ptr.querySelector('svg').style.transform = '';
+  try { await loadGallery(); } catch {}
+  await new Promise(r => setTimeout(r, 300));
+  hidePtr();
+  pullRefreshing = false;
+}
 
 galleryScroll.addEventListener('touchstart', e => {
-  if (galleryScroll.scrollTop === 0) {
+  if (galleryScroll.scrollTop === 0 && !pullRefreshing) {
     pullStart = e.touches[0].clientY;
-    pullActive = true;
-    pullProgress = 0;
+    pullActive = true; pullDist = 0; pullAdmin = false;
   }
 }, { passive: true });
 
 galleryScroll.addEventListener('touchmove', e => {
   if (!pullActive) return;
   const diff = e.touches[0].clientY - pullStart;
+  if (galleryScroll.scrollTop > 0) { endPull(true); return; }
   if (diff > 10) {
+    pullDist = diff;
+    showPtr(diff);
+    // holding the pull for 5 seconds still opens the hidden admin entry (the bar only shows after 1.5 s)
     if (!pullTimer) {
-      updatePullHint('Hold 5 seconds to open admin…');
       let elapsed = 0;
       pullTimer = setInterval(() => {
         elapsed += 100;
-        const pct = Math.min(elapsed / 5000, 1);
-        document.getElementById('progress-bar').style.width = (pct * 100) + '%';
+        document.getElementById('progress-bar').style.width = elapsed > 1500 ? (Math.min((elapsed - 1500) / 3500, 1) * 100) + '%' : '0%';
         if (elapsed >= 5000) {
           clearInterval(pullTimer); pullTimer = null;
+          pullAdmin = true; pullActive = false;
           document.getElementById('progress-bar').style.width = '0%';
-          updatePullHint('↓ Pull down 5 seconds for admin panel');
+          hidePtr();
           triggerAdminPanel();
         }
       }, 100);
     }
+  } else if (diff <= 0) {
+    pullDist = 0; hidePtr();
   }
 }, { passive: true });
 
-function endPull() {
+function endPull(cancel) {
   if (pullTimer) { clearInterval(pullTimer); pullTimer = null; }
+  const refresh = pullActive && !pullAdmin && !cancel && pullDist >= PULL_THRESHOLD;
   pullActive = false;
   document.getElementById('progress-bar').style.width = '0%';
-  setTimeout(() => updatePullHint('↓ Pull down 5 seconds for admin panel'), 200);
+  if (refresh) doPullRefresh(); else if (!pullRefreshing) hidePtr();
+  pullDist = 0;
 }
-galleryScroll.addEventListener('touchend', endPull, { passive: true });
-galleryScroll.addEventListener('touchcancel', endPull, { passive: true });
+galleryScroll.addEventListener('touchend', () => endPull(false), { passive: true });
+galleryScroll.addEventListener('touchcancel', () => endPull(true), { passive: true });
 
 function updatePullHint(msg) {
-  document.querySelector('.pull-hint span').textContent = msg;
+  const el = document.querySelector('.pull-hint span');
+  if (el) el.textContent = msg;
 }
 function triggerAdminPanel() {
   document.getElementById('admin-modal').classList.add('open');
@@ -3402,7 +3452,7 @@ function toast(msg) {
   window.addEventListener('load', () => positionNav(currentScreen, false));
 
   // Gallery header
-  document.getElementById('refresh-btn').addEventListener('click', loadGallery);
+  document.getElementById('filter-btn').addEventListener('click', toggleFeedTools);
   // Admin entry is hidden: tap the "Memories" title 5 times quickly (or hold a pull-down for 5 seconds)
   let secretTaps = 0, secretTimer = null;
   document.querySelector('#screen-gallery h1').addEventListener('click', () => {
